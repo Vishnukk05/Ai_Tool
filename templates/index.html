@@ -224,6 +224,17 @@
                 <button class="nav-link" id="v-pills-translate-tab" data-bs-toggle="pill" data-bs-target="#v-pills-translate">
                     <i class="fas fa-language"></i> Translate
                 </button>
+                
+                <button class="nav-link" id="v-pills-convert-tab" data-bs-toggle="pill" data-bs-target="#v-pills-convert">
+                    <i class="fas fa-exchange-alt"></i> File Converter
+                </button>
+                
+                <button class="nav-link" id="v-pills-compress-tab" data-bs-toggle="pill" data-bs-target="#v-pills-compress">
+                    <i class="fas fa-compress-arrows-alt"></i> Image Compressor
+                </button>
+                <button class="nav-link" id="v-pills-vidaudio-tab" data-bs-toggle="pill" data-bs-target="#v-pills-vidaudio">
+                    <i class="fas fa-music"></i> Video to Audio
+                </button>
                 <button class="nav-link" id="v-pills-youtube-tab" data-bs-toggle="pill" data-bs-target="#v-pills-youtube">
                     <i class="fab fa-youtube"></i> Video Summary
                 </button>
@@ -266,7 +277,7 @@
                     <div class="welcome-banner">
                         <div>
                             <h2 class="fw-bold mb-1">Welcome back</h2>
-                            <p class="text-muted mb-0">System is ready. All 11 tools are active.</p>
+                            <p class="text-muted mb-0">System is ready. All 14 tools are active.</p>
                         </div>
                         <div>
                             <a href="/download-report" class="btn btn-outline-primary">
@@ -295,24 +306,24 @@
                     <h6 class="fw-bold mb-3 text-muted">QUICK ACTIONS</h6>
                     <div class="row g-4">
                         <div class="col-md-3">
-                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-vision-tab').click()">
-                                <div class="tool-icon-circle"><i class="fas fa-eye"></i></div>
-                                <h6 class="fw-bold mb-1">Vision AI</h6>
-                                <small class="text-muted">Analyze Images</small>
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-compress-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-compress-arrows-alt"></i></div>
+                                <h6 class="fw-bold mb-1">Compressor</h6>
+                                <small class="text-muted">Reduce Size</small>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-youtube-tab').click()">
-                                <div class="tool-icon-circle"><i class="fab fa-youtube"></i></div>
-                                <h6 class="fw-bold mb-1">Summarizer</h6>
-                                <small class="text-muted">YouTube Video</small>
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-vidaudio-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-music"></i></div>
+                                <h6 class="fw-bold mb-1">Vid to Audio</h6>
+                                <small class="text-muted">Extract MP3</small>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-code-tab').click()">
-                                <div class="tool-icon-circle"><i class="fas fa-code"></i></div>
-                                <h6 class="fw-bold mb-1">Code Doctor</h6>
-                                <small class="text-muted">Fix Bugs</small>
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-convert-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-exchange-alt"></i></div>
+                                <h6 class="fw-bold mb-1">Converter</h6>
+                                <small class="text-muted">Change Format</small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -437,6 +448,35 @@
                     </div>
                 </div>
 
+                <div class="tab-pane fade" id="v-pills-convert">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Universal File Converter</h4>
+                        <div class="alert alert-info border-0 shadow-sm mb-4">
+                            <small><i class="fas fa-info-circle me-2"></i>Supports: PNG, JPG, WEBP, BMP -> Converts to your choice.</small>
+                        </div>
+                        <form id="convertForm">
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label class="form-label">Upload File (Image)</label>
+                                    <input type="file" class="form-control" name="file" accept="image/*" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Target Format</label>
+                                    <select class="form-select" name="format">
+                                        <option value="PNG">PNG</option>
+                                        <option value="JPG">JPG</option>
+                                        <option value="PDF">PDF</option>
+                                        <option value="WEBP">WEBP</option>
+                                        <option value="ICO">ICO</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Convert File</button>
+                        </form>
+                        <div id="convertOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
                 <div class="tab-pane fade" id="v-pills-youtube">
                     <div class="card-box">
                         <h4 class="fw-bold mb-4">YouTube Video Summarizer</h4>
@@ -448,6 +488,45 @@
                             <button type="submit" class="btn btn-primary">Summarize Video</button>
                         </form>
                         <div id="youtubeOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-compress">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Image Compressor</h4>
+                        <form id="compressForm">
+                            <div class="mb-3">
+                                <label class="form-label">Upload Image</label>
+                                <input type="file" class="form-control" name="file" accept="image/*" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Compression Level</label>
+                                <select class="form-select" name="quality">
+                                    <option value="80">Low Compression (Better Quality)</option>
+                                    <option value="60" selected>Medium Compression (Balanced)</option>
+                                    <option value="30">High Compression (Smallest Size)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Compress Image</button>
+                        </form>
+                        <div id="compressOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-vidaudio">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Video to Audio Converter</h4>
+                        <div class="alert alert-info border-0 shadow-sm">
+                            <small>Supports .mp4, .mov, .avi -> Converts to MP3</small>
+                        </div>
+                        <form id="vidAudioForm">
+                            <div class="mb-3">
+                                <label class="form-label">Upload Video</label>
+                                <input type="file" class="form-control" name="file" accept="video/*" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Extract Audio (MP3)</button>
+                        </form>
+                        <div id="vidAudioOutput" class="mt-4"></div>
                     </div>
                 </div>
 
@@ -587,7 +666,7 @@
                         if(data.analysis) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.analysis}</pre></div>`;
                         if(data.quiz) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.quiz}</pre></div>`;
                         if(data.review) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.review}</pre></div>`;
-                        if(data.summary) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.summary}</pre></div>`; // YOUTUBE
+                        if(data.summary) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.summary}</pre></div>`; 
                         output.innerHTML = content;
                         updateStats();
                     } else { output.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; }
@@ -606,7 +685,12 @@
         handleForm('visionForm', '/analyze-image', 'visionOutput');
         handleForm('quizForm', '/generate-quiz', 'quizOutput');
         handleForm('codeForm', '/review-code', 'codeOutput');
-        handleForm('youtubeForm', '/summarize-video', 'youtubeOutput'); // NEW
+        handleForm('youtubeForm', '/summarize-video', 'youtubeOutput');
+        handleForm('convertForm', '/convert-file', 'convertOutput'); 
+        
+        // NEW FORMS
+        handleForm('compressForm', '/compress-image', 'compressOutput');
+        handleForm('vidAudioForm', '/video-to-audio', 'vidAudioOutput');
 
         function toggleChat() { 
             const w = document.getElementById('chatWindow'); w.style.display = w.style.display==='flex'?'none':'flex'; 

@@ -16,7 +16,8 @@ import speech_recognition as sr
 from dotenv import load_dotenv
 import psutil
 import PIL.Image
-from youtube_transcript_api import YouTubeTranscriptApi 
+from youtube_transcript_api import YouTubeTranscriptApi
+from moviepy.editor import VideoFileClip
 
 # --- LOAD ENV ---
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -42,7 +43,7 @@ AVAILABLE_MODELS = [
 global_stats = {
     "text_gen": 5, "audio_gen": 2, "transcribe": 3, "pdf_gen": 4, 
     "chat_msgs": 0, "image_analysis": 0, "code_review": 0, "quiz_gen": 0,
-    "video_sum": 0
+    "video_sum": 0, "file_conv": 0, "compression": 0, "vid_audio": 0
 }
 
 def increment_stat(field_name):
@@ -62,7 +63,6 @@ def get_safe_ai_response(prompt, image=None):
         HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE
     }
-
     for model_name in AVAILABLE_MODELS:
         try:
             model = genai.GenerativeModel(model_name)
@@ -92,7 +92,7 @@ def download_report():
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try: cpu, ram = psutil.cpu_percent(None), psutil.virtual_memory().percent
         except: cpu, ram = 0, 0
-        report = f"SYSTEM REPORT\nDate: {now}\nCPU: {cpu}%\nRAM: {ram}%\n"
+        report = f"SYSTEM REPORT\nDate: {now}\nCPU: {cpu}%\nRAM: {ram}%\nStats: {global_stats}"
         return Response(report, mimetype="text/plain", headers={"Content-disposition": "attachment; filename=report.txt"})
     except Exception as e: return str(e), 500
 
@@ -122,28 +122,22 @@ def make_ppt():
         topic = request.form.get('topic', '')
         src_text = request.form.get('source_text', '')
         template_file = request.files.get('template_file')
-        
         if template_file and template_file.filename != '':
             temp_path = os.path.join(STATIC_FOLDER, f"temp_{uuid.uuid4().hex}.pptx")
             template_file.save(temp_path)
             prs = Presentation(temp_path)
         else:
             prs = Presentation()
-
         prompt = (f"Create a presentation about {topic}. {src_text}. "
                   "Format exactly:\nSLIDE_TITLE: [Title]\nBULLET: [Point 1]\nBULLET: [Point 2]")
-        
         content = get_safe_ai_response(prompt)
         if not content: content = f"SLIDE_TITLE: {topic}\nBULLET: Content failed."
-
         lines = content.split('\n')
         curr = None
-        
         try:
             slide = prs.slides.add_slide(prs.slide_layouts[0])
             slide.shapes.title.text = topic.upper()
         except: pass
-
         for line in lines:
             clean = line.strip().replace('*', '').replace('#', '')
             if "SLIDE_TITLE:" in clean:
@@ -159,7 +153,6 @@ def make_ppt():
                     p.text = clean.split("BULLET:", 1)[1].strip()
                     p.level = 0
                 except: pass
-
         fname = f"ppt_{uuid.uuid4().hex[:10]}.pptx"
         prs.save(os.path.join(STATIC_FOLDER, fname))
         if 'temp_path' in locals() and os.path.exists(temp_path): os.remove(temp_path)
@@ -175,7 +168,6 @@ def text_to_audio():
         if lang != 'en':
             res = get_safe_ai_response(f"Translate to {lang} ONLY:\n{text}")
             if res: text = res.strip()
-
         fname = f"audio_{uuid.uuid4().hex[:10]}.mp3"
         tts = gTTS(text=text, lang='en' if lang=='auto' else lang, slow=False)
         tts.save(os.path.join(STATIC_FOLDER, fname))
@@ -216,7 +208,6 @@ def generate_email():
         return jsonify({"success": True, "email_content": res if res else "Busy"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-# --- UPDATED PDF GENERATOR (FIXED MARGINS) ---
 @app.route('/text-to-pdf', methods=['POST'])
 def text_to_pdf():
     increment_stat('pdf_gen')
@@ -226,29 +217,7 @@ def text_to_pdf():
             t = request.form.get('target_language', 'English')
             res = get_safe_ai_response(f"Translate HTML to {t}, keep tags: {h}")
             if res: h = res.replace('```html','').replace('```','')
-        
-        # ADD CSS FOR A4 SIZE AND MARGINS
-        styled_html = f"""
-        <html>
-        <head>
-            <style>
-                @page {{
-                    size: A4;
-                    margin: 2cm;
-                }}
-                body {{
-                    font-family: Helvetica, sans-serif;
-                    font-size: 12pt;
-                    line-height: 1.5;
-                }}
-            </style>
-        </head>
-        <body>
-            {h}
-        </body>
-        </html>
-        """
-        
+        styled_html = f"""<html><head><style>@page {{ size: A4; margin: 2cm; }} body {{ font-family: Helvetica, sans-serif; font-size: 12pt; line-height: 1.5; }}</style></head><body>{h}</body></html>"""
         fname = f"doc_{uuid.uuid4().hex[:10]}.pdf"
         with open(os.path.join(STATIC_FOLDER, fname), "w+b") as f: 
             pisa.CreatePDF(BytesIO(styled_html.encode('utf-8')), dest=f)
@@ -267,42 +236,20 @@ def analyze_image():
         return jsonify({"success": True, "analysis": res if res else "Failed."})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-# --- UPDATED QUIZ GENERATOR (FIXED FORMATTING) ---
 @app.route('/generate-quiz', methods=['POST'])
 def generate_quiz():
     increment_stat('quiz_gen')
     try:
         topic = request.form.get('topic', '')
         count = request.form.get('count', '5')
-        
         prompt = f"Create a {count}-question Multiple Choice Quiz about: {topic}. Include Answer Key at bottom."
         quiz_text = get_safe_ai_response(prompt)
-        
         if not quiz_text: return jsonify({"success": False, "error": "AI Busy"}), 503
-
-        # CONVERT NEWLINES TO HTML BREAKS FOR PDF
         formatted_quiz = quiz_text.replace('\n', '<br>')
-
-        html_content = f"""
-        <html>
-        <head>
-            <style>
-                @page {{ size: A4; margin: 2cm; }}
-                body {{ font-family: Helvetica; line-height: 1.6; }}
-                h2 {{ color: #2563eb; border-bottom: 2px solid #ddd; padding-bottom: 10px; }}
-            </style>
-        </head>
-        <body>
-            <h2>Quiz: {topic}</h2>
-            <div>{formatted_quiz}</div>
-        </body>
-        </html>
-        """
-        
+        html_content = f"""<html><head><style>@page {{ size: A4; margin: 2cm; }} body {{ font-family: Helvetica; line-height: 1.6; }} h2 {{ color: #2563eb; border-bottom: 2px solid #ddd; padding-bottom: 10px; }}</style></head><body><h2>Quiz: {topic}</h2><div>{formatted_quiz}</div></body></html>"""
         fname = f"quiz_{uuid.uuid4().hex[:10]}.pdf"
         with open(os.path.join(STATIC_FOLDER, fname), "w+b") as f:
             pisa.CreatePDF(BytesIO(html_content.encode('utf-8')), dest=f)
-
         return jsonify({"success": True, "quiz": quiz_text, "file_url": f"/static/{fname}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
@@ -323,17 +270,78 @@ def summarize_video():
         vid = None
         if "youtube.com" in url: vid = url.split("v=")[1].split("&")[0]
         elif "youtu.be" in url: vid = url.split("/")[-1]
-        
         if not vid: return jsonify({"success": False, "error": "Invalid URL"}), 400
-
         try:
             transcript = YouTubeTranscriptApi.get_transcript(vid)
             full = " ".join([i['text'] for i in transcript])
         except: return jsonify({"success": False, "error": "No captions available."})
-
         prompt = f"Summarize video:\n{full[:30000]}"
         res = get_safe_ai_response(prompt)
         return jsonify({"success": True, "summary": res if res else "Busy"})
+    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/convert-file', methods=['POST'])
+def convert_file():
+    increment_stat('file_conv')
+    try:
+        if 'file' not in request.files: return jsonify({"success": False, "error": "No file uploaded"}), 400
+        file = request.files['file']
+        target_format = request.form.get('format', 'PNG').upper()
+        if file.filename == '': return jsonify({"success": False, "error": "No file selected"}), 400
+        img = PIL.Image.open(file)
+        if target_format in ['JPEG', 'JPG', 'PDF']:
+            img = img.convert('RGB')
+        new_filename = f"converted_{uuid.uuid4().hex[:10]}.{target_format.lower()}"
+        save_path = os.path.join(STATIC_FOLDER, new_filename)
+        img.save(save_path, target_format if target_format != 'JPG' else 'JPEG')
+        return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
+    except Exception as e: return jsonify({"success": False, "error": f"Error: {str(e)}"}), 500
+
+# --- NEW: COMPRESS IMAGE ---
+@app.route('/compress-image', methods=['POST'])
+def compress_image():
+    increment_stat('compression')
+    try:
+        if 'file' not in request.files: return jsonify({"success": False, "error": "No file"}), 400
+        file = request.files['file']
+        quality = int(request.form.get('quality', '60'))
+        
+        img = PIL.Image.open(file)
+        img = img.convert('RGB')
+        
+        new_filename = f"compressed_{uuid.uuid4().hex[:10]}.jpg"
+        save_path = os.path.join(STATIC_FOLDER, new_filename)
+        
+        img.save(save_path, "JPEG", quality=quality, optimize=True)
+        return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
+    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+
+# --- NEW: VIDEO TO AUDIO ---
+@app.route('/video-to-audio', methods=['POST'])
+def video_to_audio():
+    increment_stat('vid_audio')
+    try:
+        if 'file' not in request.files: return jsonify({"success": False, "error": "No video file"}), 400
+        file = request.files['file']
+        
+        # Save temp video
+        temp_vid_name = f"temp_vid_{uuid.uuid4().hex[:10]}.mp4"
+        temp_vid_path = os.path.join(STATIC_FOLDER, temp_vid_name)
+        file.save(temp_vid_path)
+        
+        # Output Audio Path
+        audio_name = f"extracted_{uuid.uuid4().hex[:10]}.mp3"
+        audio_path = os.path.join(STATIC_FOLDER, audio_name)
+        
+        # Convert
+        clip = VideoFileClip(temp_vid_path)
+        clip.audio.write_audiofile(audio_path, logger=None)
+        clip.close()
+        
+        # Cleanup video
+        if os.path.exists(temp_vid_path): os.remove(temp_vid_path)
+        
+        return jsonify({"success": True, "file_url": f"/static/{audio_name}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
