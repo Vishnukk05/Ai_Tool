@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workspace Enterprise</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* ENTERPRISE THEME */
+            --primary: #2563eb;
+            --primary-bg: #eff6ff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-body: #f8fafc;
+            --border-color: #e2e8f0;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0; top: 0;
+            display: flex; flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        .brand {
+            padding: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .brand:hover { color: #1e40af; }
+
+        .nav-section { padding: 1rem 0.8rem; flex-grow: 1; overflow-y: auto; }
+
+        .nav-label {
+            font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 0.8px; color: #94a3b8; font-weight: 700;
+            margin: 1.5rem 0 0.5rem 0.8rem;
+        }
+
+        .nav-pills .nav-link {
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.25rem;
+            border-radius: 8px;
+            display: flex; align-items: center;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-pills .nav-link:hover { background-color: var(--bg-body); color: var(--primary); }
+        .nav-pills .nav-link.active { background-color: var(--primary-bg); color: var(--primary); }
+
+        .nav-pills .nav-link i { 
+            width: 24px; text-align: center; margin-right: 12px; font-size: 1.1em; 
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            height: 100vh;
+            overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+
+        .header-bar {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 900;
+        }
+
+        .content-area { 
+            padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; 
+        }
+
+        /* --- CARDS & WIDGETS --- */
+        .welcome-banner {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .card-box {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex; flex-direction: column; justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card-box.tool-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.04);
+            border-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .tool-icon-circle {
+            width: 50px; height: 50px;
+            background: var(--primary-bg);
+            color: var(--primary);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            margin: 0 auto 1rem auto;
+        }
+
+        /* --- FORMS --- */
+        .form-control, .form-select {
+            background-color: #fcfcfc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .btn-primary { background-color: var(--primary); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+
+        /* --- CHAT WIDGET --- */
+        .floating-chat-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 60px; height: 60px;
+            background-color: var(--primary);
+            color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; z-index: 2000;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            transition: transform 0.2s;
+        }
+        .floating-chat-btn:hover { transform: scale(1.05); }
+
+        .chat-window {
+            position: fixed; bottom: 100px; right: 30px;
+            width: 360px; height: 500px;
+            background: white; border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            display: none; flex-direction: column;
+            z-index: 2000; overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .chat-header { background: white; border-bottom: 1px solid var(--border-color); padding: 15px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex-grow: 1; padding: 20px; background: #f9fafb; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.5; }
+        .chat-msg-ai { background: white; border: 1px solid var(--border-color); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-msg-user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-footer { padding: 15px; background: white; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+
+        /* EDITOR & UTILS */
+        #editor-container { height: 300px; background: white; }
+        pre { background: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 0.9em; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand" onclick="document.getElementById('v-pills-home-tab').click()">
+            <i class="fas fa-cube"></i> AI Workspace
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                <div class="nav-label">Main</div>
+                <button class="nav-link active" id="v-pills-home-tab" data-bs-toggle="pill" data-bs-target="#v-pills-home">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+
+                <div class="nav-label">Business Tools</div>
+                <button class="nav-link" id="v-pills-minutes-tab" data-bs-toggle="pill" data-bs-target="#v-pills-minutes">
+                    <i class="fas fa-clipboard-list"></i> Meeting Minutes
+                </button>
+                <button class="nav-link" id="v-pills-ppt-tab" data-bs-toggle="pill" data-bs-target="#v-pills-ppt">
+                    <i class="fas fa-desktop"></i> Presentations
+                </button>
+                <button class="nav-link" id="v-pills-email-tab" data-bs-toggle="pill" data-bs-target="#v-pills-email">
+                    <i class="fas fa-paper-plane"></i> Email Writer
+                </button>
+                <button class="nav-link" id="v-pills-vision-tab" data-bs-toggle="pill" data-bs-target="#v-pills-vision">
+                    <i class="fas fa-eye"></i> Vision Analyst
+                </button>
+
+                <div class="nav-label">Utilities</div>
+                <button class="nav-link" id="v-pills-pdf-tab" data-bs-toggle="pill" data-bs-target="#v-pills-pdf">
+                    <i class="fas fa-file-alt"></i> Documents
+                </button>
+                <button class="nav-link" id="v-pills-voice-tab" data-bs-toggle="pill" data-bs-target="#v-pills-voice">
+                    <i class="fas fa-volume-up"></i> Text to Speech
+                </button>
+                <button class="nav-link" id="v-pills-transcribe-tab" data-bs-toggle="pill" data-bs-target="#v-pills-transcribe">
+                    <i class="fas fa-microphone"></i> Transcribe Audio
+                </button>
+                <button class="nav-link" id="v-pills-translate-tab" data-bs-toggle="pill" data-bs-target="#v-pills-translate">
+                    <i class="fas fa-language"></i> Translate
+                </button>
+
+                <div class="nav-label">Developer</div>
+                <button class="nav-link" id="v-pills-quiz-tab" data-bs-toggle="pill" data-bs-target="#v-pills-quiz">
+                    <i class="fas fa-question-circle"></i> Quiz Maker
+                </button>
+                <button class="nav-link" id="v-pills-code-tab" data-bs-toggle="pill" data-bs-target="#v-pills-code">
+                    <i class="fas fa-code"></i> Code Reviewer
+                </button>
+            </div>
+        </div>
+
+        <div class="p-3 border-top">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-muted">CPU LOAD</span>
+                <span class="small fw-bold text-dark" id="cpu-load-text">0%</span>
+            </div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar bg-primary" id="cpu-bar" style="width: 0%"></div>
+            </div>
+            <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="useDemoToggle">
+                <label class="form-check-label small text-muted" for="useDemoToggle">Safe Mode</label>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header-bar">
+            <div><h5 class="mb-0 fw-bold">Overview</h5></div>
+            <div><small class="text-muted" id="currentDate">Loading...</small></div>
+        </header>
+
+        <div class="content-area">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <div class="tab-pane fade show active" id="v-pills-home">
+                    <div class="welcome-banner">
+                        <div>
+                            <h2 class="fw-bold mb-1">Welcome back</h2>
+                            <p class="text-muted mb-0">System is ready. All 10 tools are active.</p>
+                        </div>
+                        <div>
+                            <a href="/download-report" class="btn btn-outline-primary">
+                                <i class="fas fa-file-download me-2"></i>Download Report
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-lg-8">
+                            <div class="card-box">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="fw-bold mb-0 text-muted">SYSTEM ACTIVITY</h6>
+                                </div>
+                                <div style="height: 250px;"><canvas id="systemChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card-box">
+                                <h6 class="fw-bold mb-3 text-muted">TOOL USAGE</h6>
+                                <div style="height: 250px; position: relative;"><canvas id="modelChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-3 text-muted">QUICK ACTIONS</h6>
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-vision-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-eye"></i></div>
+                                <h6 class="fw-bold mb-1">Vision AI</h6>
+                                <small class="text-muted">Analyze Images</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-quiz-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-question-circle"></i></div>
+                                <h6 class="fw-bold mb-1">Quiz Maker</h6>
+                                <small class="text-muted">Create Tests</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-code-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-code"></i></div>
+                                <h6 class="fw-bold mb-1">Code Doctor</h6>
+                                <small class="text-muted">Fix Bugs</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-ppt-tab').click()">
+                                <div class="tool-icon-circle"><i class="fas fa-desktop"></i></div>
+                                <h6 class="fw-bold mb-1">Slides Maker</h6>
+                                <small class="text-muted">Generate PPT</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-minutes">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Meeting Minutes Generator</h4>
+                        <form id="minutesForm">
+                            <div class="mb-3"><textarea class="form-control" name="notes" rows="8" placeholder="Paste rough notes here..."></textarea></div>
+                            <button type="submit" class="btn btn-primary">Generate Minutes</button>
+                        </form>
+                        <div id="minutesOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-ppt">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Presentation Generator</h4>
+                        <form id="makePptForm">
+                            <div class="row mb-3">
+                                <div class="col-md-8"><input type="text" class="form-control" name="topic" placeholder="Presentation Topic"></div>
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted">TEMPLATE (.pptx) - Optional</label>
+                                    <input type="file" class="form-control" name="template_file" accept=".pptx">
+                                </div>
+                            </div>
+                            <div class="mb-3"><textarea class="form-control" name="source_text" rows="3" placeholder="Context..."></textarea></div>
+                            <button type="submit" class="btn btn-primary">Create Slides</button>
+                        </form>
+                        <div id="pptOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-pdf">
+                    <div class="card-box">
+                        <div class="d-flex justify-content-between mb-4"><h4 class="fw-bold">Document Editor</h4><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="translateCheck"><label class="form-check-label ms-2">Translate?</label></div></div>
+                        <div class="mb-3" id="pdfLangSelect" style="display:none;"><select class="form-select language-list" name="target_language"></select></div>
+                        <form id="textToPdfForm"><div id="editor-container"></div><input type="hidden" name="html_content" id="hiddenHtmlInput"><button type="submit" class="btn btn-primary mt-3">Download PDF</button></form>
+                        <div id="pdfOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-email">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Email Drafter</h4>
+                        <form id="generateEmailForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6"><input type="text" class="form-control" name="recipient" placeholder="To"></div>
+                                <div class="col-md-6"><input type="text" class="form-control" name="topic" placeholder="Subject"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Draft Email</button>
+                        </form>
+                        <div id="emailOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-vision">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Vision Analyst</h4>
+                        <form id="visionForm">
+                            <div class="mb-3"><label class="form-label">Upload Image</label><input type="file" class="form-control" name="image" accept="image/*" required></div>
+                            <div class="mb-3"><input type="text" class="form-control" name="prompt" placeholder="Ask something (e.g., 'Summarize this chart')"></div>
+                            <button type="submit" class="btn btn-primary">Analyze Image</button>
+                        </form>
+                        <div id="visionOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-voice">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Text to Speech (Auto-Translate)</h4>
+                        <form id="textToAudioForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold">INPUT LANGUAGE</label>
+                                    <select class="form-select language-list-auto" name="source_language"></select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold">OUTPUT VOICE</label>
+                                    <select class="form-select language-list" name="target_language"></select>
+                                </div>
+                            </div>
+                            <div class="mb-3"><textarea class="form-control" name="text" rows="4" placeholder="Enter text in any language..."></textarea></div>
+                            <button type="submit" class="btn btn-primary">Generate Audio</button>
+                        </form>
+                        <div id="audioOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-transcribe">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Audio Transcriber</h4>
+                        <form id="audioToTextForm">
+                            <div class="mb-3"><label class="form-label">Audio Language</label><select class="form-select" id="speechLangSelect" name="language"></select></div>
+                            <div class="mb-3"><input type="file" class="form-control" name="file" accept=".wav"></div>
+                            <button type="submit" class="btn btn-primary">Start Transcription</button>
+                        </form>
+                        <div id="audioToTextOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-translate">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Translator</h4>
+                        <form id="translateForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6"><select class="form-select language-list-auto" name="source_language"></select></div>
+                                <div class="col-md-6"><select class="form-select language-list" name="target_language"></select></div>
+                            </div>
+                            <div class="mb-3"><textarea class="form-control" name="text" rows="4"></textarea></div>
+                            <button type="submit" class="btn btn-primary">Translate</button>
+                        </form>
+                        <div id="translateOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-quiz">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Quiz Generator</h4>
+                        <form id="quizForm">
+                            <div class="mb-3">
+                                <label class="form-label">Number of Questions</label>
+                                <select class="form-select w-25" name="count">
+                                    <option value="5">5 Questions</option>
+                                    <option value="10">10 Questions</option>
+                                    <option value="15">15 Questions</option>
+                                    <option value="20">20 Questions</option>
+                                </select>
+                            </div>
+                            <div class="mb-3"><label class="form-label">Topic or Content</label><textarea class="form-control" name="topic" rows="5" placeholder="Paste content to generate a quiz..."></textarea></div>
+                            <button type="submit" class="btn btn-primary">Generate Quiz</button>
+                        </form>
+                        <div id="quizOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-code">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Code Reviewer</h4>
+                        <form id="codeForm">
+                            <div class="mb-3"><label class="form-label">Paste Code</label><textarea class="form-control" name="code" rows="10" style="font-family: monospace;" placeholder="Paste code snippet..."></textarea></div>
+                            <button type="submit" class="btn btn-primary">Review Code</button>
+                        </form>
+                        <div id="codeOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div class="floating-chat-btn" onclick="toggleChat()">
+        <i class="fas fa-comment-alt"></i>
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <span>AI Assistant</span>
+            <button class="btn btn-sm" onclick="toggleChat()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-msg chat-msg-ai">Hello! How can I help you?</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" class="form-control border-0 bg-light" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChat()">
+            <button class="btn btn-primary rounded-circle" onclick="sendChat()"><i class="fas fa-arrow-up"></i></button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        // DATE
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        // CHARTS
+        Chart.register(ChartDataLabels);
+        const ctxSystem = document.getElementById('systemChart').getContext('2d');
+        const systemChart = new Chart(ctxSystem, {
+            type: 'line',
+            data: { labels: Array(20).fill(''), datasets: [{ label: 'CPU', data: Array(20).fill(0), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', borderWidth: 2, fill: true, pointRadius: 0, tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, max: 100, grid: { display: false } }, x: { grid: { display: false } } } }
+        });
+
+        const ctxModel = document.getElementById('modelChart').getContext('2d');
+        const modelChart = new Chart(ctxModel, {
+            type: 'doughnut',
+            data: { labels: ['Text', 'Audio', 'Code', 'Vision', 'Chat'], datasets: [{ data: [1, 1, 1, 1, 1], backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false } } }
+        });
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                systemChart.data.datasets[0].data.push(data.cpu || 0);
+                systemChart.data.datasets[0].data.shift();
+                systemChart.update();
+                document.getElementById('cpu-load-text').innerText = (data.cpu || 0) + '%';
+                document.getElementById('cpu-bar').style.width = (data.cpu || 0) + '%';
+                if (data.usage) {
+                    modelChart.data.datasets[0].data = [data.usage.text_gen, data.usage.audio_gen, data.usage.code_review, data.usage.image_analysis, data.usage.chat_msgs || 0];
+                    modelChart.update();
+                }
+            } catch (e) { }
+        }
+        setInterval(updateStats, 2000);
+
+        // EDITOR & LANGUAGES
+        const demoToggle = document.getElementById('useDemoToggle');
+        var quill = new Quill('#editor-container', { theme: 'snow', modules: { toolbar: [['bold', 'italic', 'underline'], [{'list':'ordered'}, {'list':'bullet'}]] } });
+        document.getElementById('translateCheck').addEventListener('change', function() { document.getElementById('pdfLangSelect').style.display = this.checked ? 'block' : 'none'; });
+
+        const languages = [{code:'en',name:'English'},{code:'ml',name:'Malayalam'},{code:'hi',name:'Hindi'},{code:'ta',name:'Tamil'},{code:'te',name:'Telugu'},{code:'kn',name:'Kannada'},{code:'mr',name:'Marathi'},{code:'gu',name:'Gujarati'},{code:'bn',name:'Bengali'},{code:'pa',name:'Punjabi'},{code:'ur',name:'Urdu'},{code:'ar',name:'Arabic'},{code:'es',name:'Spanish'},{code:'fr',name:'French'},{code:'de',name:'German'},{code:'it',name:'Italian'},{code:'pt',name:'Portuguese'},{code:'ru',name:'Russian'},{code:'zh',name:'Chinese'},{code:'ja',name:'Japanese'},{code:'ko',name:'Korean'},{code:'tr',name:'Turkish'}];
+        const speechLanguages = [{code:'en-US',name:'English (US)'},{code:'en-IN',name:'English (India)'},{code:'ml-IN',name:'Malayalam'},{code:'hi-IN',name:'Hindi'},{code:'ta-IN',name:'Tamil'},{code:'te-IN',name:'Telugu'},{code:'kn-IN',name:'Kannada'},{code:'ar-SA',name:'Arabic'},{code:'es-ES',name:'Spanish'},{code:'fr-FR',name:'French'},{code:'de-DE',name:'German'},{code:'zh-CN',name:'Chinese'},{code:'ja-JP',name:'Japanese'}];
+
+        function populateSelects() {
+            document.querySelectorAll('.language-list').forEach(s => { s.innerHTML=''; languages.forEach(l => s.add(new Option(l.name,l.code==='en'?'en':l.code))); });
+            document.querySelectorAll('.language-list-auto').forEach(s => { s.innerHTML=''; s.add(new Option("Auto-detect","Auto-detect")); languages.forEach(l => s.add(new Option(l.name,l.code))); });
+            const ss = document.getElementById('speechLangSelect'); ss.innerHTML=''; speechLanguages.forEach(l => { const o=new Option(l.name,l.code); if(l.code==='en-IN')o.selected=true; ss.add(o); });
+        }
+        populateSelects();
+
+        async function handleForm(formId, url, outputId) {
+            document.getElementById(formId).addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if(formId === 'textToPdfForm') document.getElementById('hiddenHtmlInput').value = quill.root.innerHTML;
+                const btn = this.querySelector('button[type="submit"]');
+                const originalBtnText = btn.innerHTML;
+                btn.innerHTML = 'Processing...'; btn.disabled = true;
+                const formData = new FormData(this);
+                if(document.getElementById('useDemoToggle').checked) formData.append('use_demo', 'true');
+                try {
+                    const res = await fetch(url, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    const output = document.getElementById(outputId);
+                    if(data.success) {
+                        let content = '';
+                        if(data.file_url) content += `<div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle me-2"></i>Success! <a href="${data.file_url}" class="fw-bold" download>Download File</a></div>`;
+                        if(data.file_url && data.file_url.endsWith('.mp3')) content += `<div class="p-3 bg-white rounded shadow-sm border mt-2"><audio controls class="w-100"><source src="${data.file_url}" type="audio/mpeg"></audio></div>`;
+                        if(data.translated_text) content += `<div class="p-3 bg-white rounded shadow-sm border mt-2"><strong>Translated Text used:</strong><p>${data.translated_text}</p></div>`;
+                        if(data.text) content += `<div class="p-3 bg-white rounded border mt-3"><strong>Transcription:</strong><p>${data.text}</p></div>`;
+                        if(data.translation) content += `<div class="p-3 bg-white rounded border mt-3">${data.translation}</div>`;
+                        if(data.email_content) content += `<div class="p-3 bg-white rounded border mt-3"><pre>${data.email_content}</pre></div>`;
+                        if(data.minutes) content += `<div class="p-3 bg-white rounded border mt-3"><pre>${data.minutes}</pre></div>`;
+                        if(data.analysis) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.analysis}</pre></div>`;
+                        if(data.quiz) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.quiz}</pre></div>`;
+                        if(data.review) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.review}</pre></div>`;
+                        output.innerHTML = content;
+                        updateStats();
+                    } else { output.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; }
+                } catch(err) { document.getElementById(outputId).innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`; }
+                finally { btn.innerHTML = originalBtnText; btn.disabled = false; }
+            });
+        }
+
+        handleForm('textToAudioForm', '/text-to-audio', 'audioOutput');
+        handleForm('audioToTextForm', '/audio-to-text', 'audioToTextOutput');
+        handleForm('makePptForm', '/make-ppt', 'pptOutput');
+        handleForm('translateForm', '/translate', 'translateOutput');
+        handleForm('generateEmailForm', '/generate-email', 'emailOutput');
+        handleForm('textToPdfForm', '/text-to-pdf', 'pdfOutput');
+        handleForm('minutesForm', '/generate-minutes', 'minutesOutput');
+        handleForm('visionForm', '/analyze-image', 'visionOutput');
+        handleForm('quizForm', '/generate-quiz', 'quizOutput');
+        handleForm('codeForm', '/review-code', 'codeOutput');
+
+        function toggleChat() { 
+            const w = document.getElementById('chatWindow'); w.style.display = w.style.display==='flex'?'none':'flex'; 
+            if(w.style.display==='flex') document.getElementById('chatInput').focus();
+        }
+        async function sendChat() {
+            const i = document.getElementById('chatInput'); const m = i.value.trim(); if(!m) return;
+            const b = document.getElementById('chatBody'); b.innerHTML += `<div class="chat-msg chat-msg-user">${m}</div>`; i.value='';
+            try {
+                const res = await fetch('/chat', {method:'POST', body:new URLSearchParams({message:m})});
+                const d = await res.json();
+                b.innerHTML += `<div class="chat-msg chat-msg-ai">${d.success?d.response.replace(/\n/g,'<br>'):'Error'}</div>`;
+            } catch { b.innerHTML += `<div class="chat-msg chat-msg-ai text-danger">Error</div>`; }
+            b.scrollTop = b.scrollHeight;
+        }
+        document.getElementById('chatInput').addEventListener('keypress', function(e){ if(e.key==='Enter') sendChat(); });
+    </script>
+</body>
+</html>

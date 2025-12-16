@@ -1,0 +1,8 @@
+flask
+google-generativeai
+gTTS
+fpdf
+python-pptx
+Pillow
+SpeechRecognition
+python-dotenv

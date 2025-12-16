@@ -1,0 +1,17 @@
+# Ignore Virtual Environment
+.venv/
+venv/
+env/
+
+# Ignore Secrets (VERY IMPORTANT)
+.env
+
+# Ignore Cache and compiled files
+__pycache__/
+*.pyc
+
+# Ignore generated files in static folder (Optional, keeps repo clean)
+static/*.mp3
+static/*.wav
+static/*.pdf
+static/*.pptx
