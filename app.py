@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import psutil
 import PIL.Image
 from youtube_transcript_api import YouTubeTranscriptApi
+# CORRECTION: This is the specific import needed for the version you installed
 from moviepy.editor import VideoFileClip
 
 # --- LOAD ENV ---
@@ -297,7 +298,6 @@ def convert_file():
         return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
     except Exception as e: return jsonify({"success": False, "error": f"Error: {str(e)}"}), 500
 
-# --- NEW: COMPRESS IMAGE ---
 @app.route('/compress-image', methods=['POST'])
 def compress_image():
     increment_stat('compression')
@@ -316,7 +316,6 @@ def compress_image():
         return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-# --- NEW: VIDEO TO AUDIO ---
 @app.route('/video-to-audio', methods=['POST'])
 def video_to_audio():
     increment_stat('vid_audio')
