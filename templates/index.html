@@ -224,6 +224,9 @@
                 <button class="nav-link" id="v-pills-translate-tab" data-bs-toggle="pill" data-bs-target="#v-pills-translate">
                     <i class="fas fa-language"></i> Translate
                 </button>
+                <button class="nav-link" id="v-pills-youtube-tab" data-bs-toggle="pill" data-bs-target="#v-pills-youtube">
+                    <i class="fab fa-youtube"></i> Video Summary
+                </button>
 
                 <div class="nav-label">Developer</div>
                 <button class="nav-link" id="v-pills-quiz-tab" data-bs-toggle="pill" data-bs-target="#v-pills-quiz">
@@ -263,7 +266,7 @@
                     <div class="welcome-banner">
                         <div>
                             <h2 class="fw-bold mb-1">Welcome back</h2>
-                            <p class="text-muted mb-0">System is ready. All 10 tools are active.</p>
+                            <p class="text-muted mb-0">System is ready. All 11 tools are active.</p>
                         </div>
                         <div>
                             <a href="/download-report" class="btn btn-outline-primary">
@@ -299,10 +302,10 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-quiz-tab').click()">
-                                <div class="tool-icon-circle"><i class="fas fa-question-circle"></i></div>
-                                <h6 class="fw-bold mb-1">Quiz Maker</h6>
-                                <small class="text-muted">Create Tests</small>
+                            <div class="card-box tool-btn text-center" onclick="document.getElementById('v-pills-youtube-tab').click()">
+                                <div class="tool-icon-circle"><i class="fab fa-youtube"></i></div>
+                                <h6 class="fw-bold mb-1">Summarizer</h6>
+                                <small class="text-muted">YouTube Video</small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -434,20 +437,35 @@
                     </div>
                 </div>
 
+                <div class="tab-pane fade" id="v-pills-youtube">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">YouTube Video Summarizer</h4>
+                        <form id="youtubeForm">
+                            <div class="mb-3">
+                                <label class="form-label">YouTube Video URL</label>
+                                <input type="text" class="form-control" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Summarize Video</button>
+                        </form>
+                        <div id="youtubeOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
                 <div class="tab-pane fade" id="v-pills-quiz">
                     <div class="card-box">
                         <h4 class="fw-bold mb-4">Quiz Generator</h4>
                         <form id="quizForm">
                             <div class="mb-3">
                                 <label class="form-label">Number of Questions</label>
-                                <select class="form-select w-25" name="count">
-                                    <option value="5">5 Questions</option>
-                                    <option value="10">10 Questions</option>
-                                    <option value="15">15 Questions</option>
-                                    <option value="20">20 Questions</option>
-                                </select>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="count" placeholder="Ex: 5" value="5" min="1" max="50">
+                                    <span class="input-group-text">Questions</span>
+                                </div>
                             </div>
-                            <div class="mb-3"><label class="form-label">Topic or Content</label><textarea class="form-control" name="topic" rows="5" placeholder="Paste content to generate a quiz..."></textarea></div>
+                            <div class="mb-3">
+                                <label class="form-label">Topic or Content</label>
+                                <textarea class="form-control" name="topic" rows="5" placeholder="Paste content to generate a quiz..."></textarea>
+                            </div>
                             <button type="submit" class="btn btn-primary">Generate Quiz</button>
                         </form>
                         <div id="quizOutput" class="mt-4"></div>
@@ -569,6 +587,7 @@
                         if(data.analysis) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.analysis}</pre></div>`;
                         if(data.quiz) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.quiz}</pre></div>`;
                         if(data.review) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.review}</pre></div>`;
+                        if(data.summary) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.summary}</pre></div>`; // YOUTUBE
                         output.innerHTML = content;
                         updateStats();
                     } else { output.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; }
@@ -587,6 +606,7 @@
         handleForm('visionForm', '/analyze-image', 'visionOutput');
         handleForm('quizForm', '/generate-quiz', 'quizOutput');
         handleForm('codeForm', '/review-code', 'codeOutput');
+        handleForm('youtubeForm', '/summarize-video', 'youtubeOutput'); // NEW
 
         function toggleChat() { 
             const w = document.getElementById('chatWindow'); w.style.display = w.style.display==='flex'?'none':'flex'; 
