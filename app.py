@@ -236,7 +236,13 @@ def audio_to_text():
         with sr.AudioFile(fpath) as src:
             audio_data = r.record(src)
             txt = r.recognize_google(audio_data, language=lang)
-        return jsonify({"success": True, "text": txt})
+        
+        # --- MODIFIED: Return file_url so frontend can play it ---
+        return jsonify({
+            "success": True, 
+            "text": txt,
+            "file_url": f"/static/{fname}" # Added this line
+        })
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/translate', methods=['POST'])
@@ -249,7 +255,6 @@ def translate():
         if not text or not target_lang:
             return jsonify({"success": False, "error": "Missing text"}), 400
 
-        # Updated Prompt for Groq
         prompt = (
             f"You are a professional translator. \n"
             f"Target Language: {target_lang}\n"
@@ -264,7 +269,6 @@ def translate():
         if not full_response:
             return jsonify({"success": False, "translation": "Error: AI Service Busy"}), 503
 
-        # Split logic
         translated_text = full_response
         transliteration = ""
         if "|||" in full_response:
@@ -272,7 +276,6 @@ def translate():
             translated_text = parts[0].strip()
             transliteration = parts[1].strip()
 
-        # Generate Audio
         audio_url = None
         try:
             lang_map = {'french': 'fr', 'spanish': 'es', 'hindi': 'hi', 'german': 'de', 'kannada': 'kn', 'tamil': 'ta'}
@@ -325,7 +328,6 @@ def analyze_image():
         img_file = request.files['image']
         prompt = request.form.get('prompt', 'Describe this image detailedly.')
         
-        # We pass the file object directly to our new Groq wrapper
         res = get_safe_ai_response(prompt, image_file=img_file)
         return jsonify({"success": True, "analysis": res if res else "Failed."})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
@@ -339,7 +341,6 @@ def generate_quiz():
         prompt = f"Create a {count}-question Multiple Choice Quiz about: {topic}. Include Answer Key at bottom."
         res = get_safe_ai_response(prompt)
         
-        # Simple PDF generation for quiz
         html_content = f"<h2>Quiz: {topic}</h2><pre>{res}</pre>"
         fname = f"quiz_{uuid.uuid4().hex[:10]}.pdf"
         with open(os.path.join(STATIC_FOLDER, fname), "w+b") as f:
@@ -371,13 +372,10 @@ def summarize_video():
         transcript = YouTubeTranscriptApi.get_transcript(vid)
         full = " ".join([i['text'] for i in transcript])
         
-        # Summarize chunks if too long
         prompt = f"Summarize this YouTube video transcript in detail:\n{full[:20000]}"
         res = get_safe_ai_response(prompt)
         return jsonify({"success": True, "summary": res if res else "Busy"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
-
-# --- RESTORED FILE CONVERSION TOOLS ---
 
 @app.route('/convert-file', methods=['POST'])
 def convert_file():
@@ -424,21 +422,17 @@ def video_to_audio():
         if 'file' not in request.files: return jsonify({"success": False, "error": "No video file"}), 400
         file = request.files['file']
         
-        # Save temp video
         temp_vid_name = f"temp_vid_{uuid.uuid4().hex[:10]}.mp4"
         temp_vid_path = os.path.join(STATIC_FOLDER, temp_vid_name)
         file.save(temp_vid_path)
         
-        # Output Audio Path
         audio_name = f"extracted_{uuid.uuid4().hex[:10]}.mp3"
         audio_path = os.path.join(STATIC_FOLDER, audio_name)
         
-        # Convert
         clip = VideoFileClip(temp_vid_path)
         clip.audio.write_audiofile(audio_path, logger=None)
         clip.close()
         
-        # Cleanup video
         if os.path.exists(temp_vid_path): os.remove(temp_vid_path)
         
         return jsonify({"success": True, "file_url": f"/static/{audio_name}"})

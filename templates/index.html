@@ -667,8 +667,14 @@
                         // 1. General File Download Link
                         if(data.file_url) content += `<div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle me-2"></i>Success! <a href="${data.file_url}" class="fw-bold" download>Download File</a></div>`;
                         
-                        // 2. Audio Player (For standard TTS or file conversion)
-                        if(data.file_url && data.file_url.endsWith('.mp3')) content += `<div class="p-3 bg-white rounded shadow-sm border mt-2"><audio controls class="w-100"><source src="${data.file_url}" type="audio/mpeg"></audio></div>`;
+                        // 2. Audio Player (For standard TTS, file conversion, OR Audio Transcribe)
+                        // UPDATED: Now also accepts .wav files so Audio Transcribe playback works
+                        if(data.file_url && (data.file_url.endsWith('.mp3') || data.file_url.endsWith('.wav'))) {
+                            content += `<div class="p-3 bg-white rounded shadow-sm border mt-2">
+                                <h6 class="text-muted small fw-bold">LISTEN TO UPLOAD:</h6>
+                                <audio controls class="w-100"><source src="${data.file_url}" type="audio/mpeg"></audio>
+                            </div>`;
+                        }
                         
                         // 3. Translation Output + Transliteration
                         if(data.translation) {
@@ -676,7 +682,6 @@
                                 <h6 class="text-muted small fw-bold">TRANSLATION:</h6>
                                 <div class="fs-5 mb-2">${data.translation}</div>`;
                             
-                            // Pronunciation (English form)
                             if(data.transliteration) {
                                 content += `<hr class="my-2">
                                 <h6 class="text-muted small fw-bold">PRONUNCIATION:</h6>
@@ -688,7 +693,7 @@
                         // 4. Audio Player (Specific for Translation - comes after text)
                         if(data.audio_url) {
                             content += `<div class="p-3 bg-white rounded shadow-sm border mt-2">
-                                <h6 class="text-muted small fw-bold">LISTEN:</h6>
+                                <h6 class="text-muted small fw-bold">LISTEN (Translated):</h6>
                                 <audio controls class="w-100"><source src="${data.audio_url}" type="audio/mpeg"></audio>
                             </div>`;
                         }
