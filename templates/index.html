@@ -500,12 +500,12 @@
                                 <input type="file" class="form-control" name="file" accept="image/*" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Compression Level</label>
-                                <select class="form-select" name="quality">
-                                    <option value="80">Low Compression (Better Quality)</option>
-                                    <option value="60" selected>Medium Compression (Balanced)</option>
-                                    <option value="30">High Compression (Smallest Size)</option>
-                                </select>
+                                <label class="form-label">Target Size (KB)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="target_kb" placeholder="Ex: 500" value="500">
+                                    <span class="input-group-text">KB</span>
+                                </div>
+                                <div class="form-text">We'll try to get as close to this size as possible.</div>
                             </div>
                             <button type="submit" class="btn btn-primary">Compress Image</button>
                         </form>
@@ -668,7 +668,6 @@
                         if(data.file_url) content += `<div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle me-2"></i>Success! <a href="${data.file_url}" class="fw-bold" download>Download File</a></div>`;
                         
                         // 2. Audio Player (For standard TTS, file conversion, OR Audio Transcribe)
-                        // UPDATED: Now also accepts .wav files so Audio Transcribe playback works
                         if(data.file_url && (data.file_url.endsWith('.mp3') || data.file_url.endsWith('.wav'))) {
                             content += `<div class="p-3 bg-white rounded shadow-sm border mt-2">
                                 <h6 class="text-muted small fw-bold">LISTEN TO UPLOAD:</h6>

@@ -55,35 +55,39 @@ def get_safe_ai_response(prompt, image_file=None):
         
         # 1. HANDLE IMAGE ANALYSIS (Vision)
         if image_file:
-            # Convert image to base64
-            image_bytes = image_file.read()
-            encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-            
-            completion = client.chat.completions.create(
-                model="llama-3.2-11b-vision-preview", # Vision Model
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{encoded_image}"
+            try:
+                # Convert image to base64
+                image_bytes = image_file.read()
+                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+                
+                completion = client.chat.completions.create(
+                    model="llama-3.2-11b-vision-preview", # Vision Model
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{encoded_image}"
+                                    },
                                 },
-                            },
-                        ],
-                    }
-                ],
-                temperature=0.5,
-                max_tokens=1024,
-            )
-            return completion.choices[0].message.content
+                            ],
+                        }
+                    ],
+                    temperature=0.5,
+                    max_tokens=1024,
+                )
+                return completion.choices[0].message.content
+            except Exception as img_err:
+                print(f"❌ Vision Error: {img_err}")
+                return f"Error analyzing image: {str(img_err)}"
 
         # 2. HANDLE TEXT/CHAT (UPDATED MODEL)
         else:
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile", # <--- UPDATED TO NEW MODEL
+                model="llama-3.3-70b-versatile", # Text Model
                 messages=[
                     {"role": "system", "content": "You are a helpful AI assistant."},
                     {"role": "user", "content": prompt}
@@ -212,38 +216,53 @@ def make_ppt():
 def text_to_audio():
     increment_stat('audio_gen')
     try:
+        # 1. Get the inputs
         text = request.form.get('text', '')
-        lang = request.form.get('language', 'en') 
-        if lang != 'en':
-            res = get_safe_ai_response(f"Translate this to {lang} ONLY. No extra text:\n{text}")
-            if res: text = res.strip()
-        fname = f"audio_{uuid.uuid4().hex[:10]}.mp3"
-        tts = gTTS(text=text, lang='en' if lang=='auto' else lang, slow=False)
-        tts.save(os.path.join(STATIC_FOLDER, fname))
-        return jsonify({"success": True, "file_url": f"/static/{fname}", "translated_text": text})
-    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/audio-to-text', methods=['POST'])
-def audio_to_text():
-    increment_stat('transcribe')
-    try:
-        f = request.files['file']
-        lang = request.form.get('language', 'en-US') 
-        fname = f"up_{uuid.uuid4().hex[:10]}.wav"
-        fpath = os.path.join(STATIC_FOLDER, fname)
-        f.save(fpath)
-        r = sr.Recognizer()
-        with sr.AudioFile(fpath) as src:
-            audio_data = r.record(src)
-            txt = r.recognize_google(audio_data, language=lang)
+        target_lang = request.form.get('target_language', 'en') 
         
-        # --- MODIFIED: Return file_url so frontend can play it ---
+        # 2. TRANSLATE IF NEEDED
+        # If the user chose a language other than English or Auto-detect, we translate first.
+        if target_lang != 'en' and target_lang != 'auto-detect':
+            # Create a prompt for Groq to translate the text
+            prompt = (
+                f"Act as a professional translator.\n"
+                f"Task: Translate the following text to the language code '{target_lang}'.\n"
+                f"Rule: Return ONLY the translated text. Do not add any introductions, explanations, or quotes.\n"
+                f"Text to translate:\n{text}"
+            )
+            
+            # Call the AI (Groq)
+            translated_res = get_safe_ai_response(prompt)
+            
+            # If AI returns a result, update the 'text' variable with the translation
+            if translated_res:
+                text = translated_res.strip()
+
+        # 3. GENERATE AUDIO (gTTS)
+        fname = f"audio_{uuid.uuid4().hex[:10]}.mp3"
+        
+        # Ensure we pass a valid 2-letter language code to gTTS
+        # If target_lang is 'auto-detect' or invalid, default to 'en'
+        tts_lang = target_lang if len(target_lang) == 2 else 'en'
+        
+        try:
+            tts = gTTS(text=text, lang=tts_lang, slow=False)
+            tts.save(os.path.join(STATIC_FOLDER, fname))
+        except Exception as e:
+            # Fallback to English if the specific accent isn't supported by gTTS
+            print(f"gTTS specific lang failed, falling back to 'en'. Error: {e}")
+            tts = gTTS(text=text, lang='en', slow=False)
+            tts.save(os.path.join(STATIC_FOLDER, fname))
+
         return jsonify({
             "success": True, 
-            "text": txt,
-            "file_url": f"/static/{fname}" # Added this line
+            "file_url": f"/static/{fname}", 
+            "translated_text": text 
         })
-    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+        
+    except Exception as e: 
+        print(f"TTS Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/translate', methods=['POST'])
 def translate():
@@ -328,9 +347,13 @@ def analyze_image():
         img_file = request.files['image']
         prompt = request.form.get('prompt', 'Describe this image detailedly.')
         
+        # Pass the file object directly to the Groq wrapper
+        # Important: Ensure the file pointer is at the start if read previously, though here we pass it fresh.
         res = get_safe_ai_response(prompt, image_file=img_file)
-        return jsonify({"success": True, "analysis": res if res else "Failed."})
-    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": True, "analysis": res if res else "Failed to analyze image."})
+    except Exception as e: 
+        print(f"Analyze Image Route Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/generate-quiz', methods=['POST'])
 def generate_quiz():
@@ -377,6 +400,8 @@ def summarize_video():
         return jsonify({"success": True, "summary": res if res else "Busy"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
+# --- RESTORED FILE CONVERSION TOOLS ---
+
 @app.route('/convert-file', methods=['POST'])
 def convert_file():
     increment_stat('file_conv')
@@ -403,15 +428,34 @@ def compress_image():
     try:
         if 'file' not in request.files: return jsonify({"success": False, "error": "No file"}), 400
         file = request.files['file']
-        quality = int(request.form.get('quality', '60'))
+        
+        # Get target size in KB (default to 500KB)
+        target_kb = int(request.form.get('target_kb', '500'))
         
         img = PIL.Image.open(file)
         img = img.convert('RGB')
         
+        # Compress logic
+        output_io = BytesIO()
+        quality = 90
+        step = 5
+        
+        while quality > 5:
+            output_io.seek(0)
+            output_io.truncate()
+            img.save(output_io, format='JPEG', quality=quality, optimize=True)
+            size_kb = output_io.tell() / 1024
+            
+            if size_kb <= target_kb:
+                break
+            quality -= step
+            
         new_filename = f"compressed_{uuid.uuid4().hex[:10]}.jpg"
         save_path = os.path.join(STATIC_FOLDER, new_filename)
         
-        img.save(save_path, "JPEG", quality=quality, optimize=True)
+        with open(save_path, "wb") as f:
+            f.write(output_io.getvalue())
+            
         return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
