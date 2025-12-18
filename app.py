@@ -32,7 +32,6 @@ STATIC_FOLDER = os.path.join(basedir, 'static')
 if not os.path.exists(STATIC_FOLDER): os.makedirs(STATIC_FOLDER)
 
 # --- STATS ---
-# Removed video_sum from stats
 global_stats = {
     "text_gen": 5, "audio_gen": 2, "transcribe": 3, "pdf_gen": 4, 
     "chat_msgs": 0, "image_analysis": 0, "code_review": 0, "quiz_gen": 0,
@@ -43,6 +42,12 @@ def increment_stat(field_name):
     try:
         if field_name in global_stats: global_stats[field_name] += 1
     except: pass
+
+# --- HEALTH CHECK ROUTE (FOR RENDER) ---
+@app.route('/health')
+def health_check():
+    """This route allows Render to verify the app is alive."""
+    return "OK", 200
 
 # --- AI WRAPPER (GROQ) ---
 def get_safe_ai_response(prompt, image_file=None):
