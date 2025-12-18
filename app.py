@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import psutil
 import base64
 import PIL.Image
-from moviepy.editor import VideoFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 # --- IMPORT FOR GROQ ---
 from groq import Groq
