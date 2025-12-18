@@ -72,7 +72,6 @@
             scrollbar-width: thin;
         }
         
-        /* Custom Scrollbar for sidebar */
         .nav-section::-webkit-scrollbar { width: 4px; }
         .nav-section::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
 
@@ -153,7 +152,6 @@
 
         .card-box {
             background: var(--bg-card);
-            /* REPLACED BORDER WITH SHADOW */
             border: 1px solid rgba(229, 231, 235, 0.5); 
             box-shadow: var(--shadow-md);
             border-radius: var(--radius-card);
@@ -346,9 +344,6 @@
                 </button>
                 <button class="nav-link" id="v-pills-vidaudio-tab" data-bs-toggle="pill" data-bs-target="#v-pills-vidaudio">
                     <i class="fas fa-music"></i> Video to Audio
-                </button>
-                <button class="nav-link" id="v-pills-youtube-tab" data-bs-toggle="pill" data-bs-target="#v-pills-youtube">
-                    <i class="fab fa-youtube"></i> Video Summary
                 </button>
 
                 <div class="nav-label">Developer</div>
@@ -607,23 +602,6 @@
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="v-pills-youtube">
-                    <div class="card-box">
-                        <h4 class="fw-bold mb-4">YouTube Video Summarizer</h4>
-                        <form id="youtubeForm">
-                            <div class="mb-3">
-                                <label class="form-label">YouTube Video URL</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light"><i class="fab fa-youtube"></i></span>
-                                    <input type="text" class="form-control" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
-                                </div>
-                            </div>
-                            <div class="text-end"><button type="submit" class="btn btn-primary">Summarize</button></div>
-                        </form>
-                        <div id="youtubeOutput" class="mt-4"></div>
-                    </div>
-                </div>
-
                 <div class="tab-pane fade" id="v-pills-compress">
                     <div class="card-box">
                         <h4 class="fw-bold mb-4">Image Compressor</h4>
@@ -857,7 +835,6 @@
                         if(data.analysis) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.analysis}</pre></div>`;
                         if(data.quiz) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.quiz}</pre></div>`;
                         if(data.review) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.review}</pre></div>`;
-                        if(data.summary) content += `<div class="p-3 bg-white rounded border mt-3"><pre style="white-space:pre-wrap;">${data.summary}</pre></div>`; 
                         
                         output.innerHTML = content;
                         updateStats();
@@ -883,7 +860,6 @@
         handleForm('visionForm', '/analyze-image', 'visionOutput');
         handleForm('quizForm', '/generate-quiz', 'quizOutput');
         handleForm('codeForm', '/review-code', 'codeOutput');
-        handleForm('youtubeForm', '/summarize-video', 'youtubeOutput');
         handleForm('convertForm', '/convert-file', 'convertOutput'); 
         handleForm('compressForm', '/compress-image', 'compressOutput');
         handleForm('vidAudioForm', '/video-to-audio', 'vidAudioOutput');
@@ -893,7 +869,6 @@
             const isFlex = w.style.display === 'flex';
             w.style.display = isFlex ? 'none' : 'flex'; 
             if(!isFlex) {
-                // Add simple animation class if you wanted, but basic display toggle works fine
                 document.getElementById('chatInput').focus();
             }
         }
@@ -901,7 +876,6 @@
             const i = document.getElementById('chatInput'); const m = i.value.trim(); if(!m) return;
             const b = document.getElementById('chatBody'); b.innerHTML += `<div class="chat-msg chat-msg-user">${m}</div>`; i.value='';
             
-            // Auto scroll
             b.scrollTop = b.scrollHeight;
 
             try {

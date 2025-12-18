@@ -1,8 +1,11 @@
 flask
-google-generativeai
-gTTS
-fpdf
+gtts
+xhtml2pdf
 python-pptx
-Pillow
 SpeechRecognition
 python-dotenv
+psutil
+Pillow
+moviepy
+groq
+gunicorn
