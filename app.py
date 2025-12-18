@@ -3,7 +3,7 @@ import logging
 import datetime
 import uuid
 import time
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, render_template, request, jsonify, Response, session
 from gtts import gTTS
 from xhtml2pdf import pisa
 from io import BytesIO
@@ -24,6 +24,8 @@ env_path = os.path.join(basedir, '.env')
 load_dotenv(env_path)
 
 app = Flask(__name__)
+# CRITICAL: Secret key for Admin Sessions
+app.secret_key = os.environ.get("SECRET_KEY", "change_this_to_random_string")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # --- CONFIGURATION ---
@@ -43,11 +45,26 @@ def increment_stat(field_name):
         if field_name in global_stats: global_stats[field_name] += 1
     except: pass
 
-# --- HEALTH CHECK ROUTE (FOR RENDER) ---
-@app.route('/health')
-def health_check():
-    """This route allows Render to verify the app is alive."""
-    return "OK", 200
+# --- ADMIN AUTHENTICATION ---
+ADMIN_USER = "Admin"
+ADMIN_PASS = "M@nojkumarkk@2343"
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    if data.get('username') == ADMIN_USER and data.get('password') == ADMIN_PASS:
+        session['is_admin'] = True
+        return jsonify({"success": True})
+    return jsonify({"success": False, "error": "Invalid Credentials"}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('is_admin', None)
+    return jsonify({"success": True})
+
+@app.route('/check-auth', methods=['GET'])
+def check_auth():
+    return jsonify({"is_admin": session.get('is_admin', False)})
 
 # --- AI WRAPPER (GROQ) ---
 def get_safe_ai_response(prompt, image_file=None):
@@ -109,12 +126,19 @@ def index(): return render_template('index.html')
 
 @app.route('/api/stats')
 def get_stats():
+    # Only return real CPU stats if admin
+    if not session.get('is_admin'):
+        return jsonify({"cpu": 0, "ram": 0, "usage": global_stats})
+        
     try: c, r = psutil.cpu_percent(0.1), psutil.virtual_memory().percent
     except: c, r = 0, 0
     return jsonify({"cpu": c, "ram": r, "usage": global_stats})
 
 @app.route('/download-report')
 def download_report():
+    if not session.get('is_admin'):
+        return "Unauthorized", 401
+
     try:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try: 
@@ -285,6 +309,7 @@ def translate():
             f"Target Language: {target_lang}\n"
             f"Text: {text}\n"
             f"Output Requirement: Return the translation in native script, followed by '|||', followed by the English transliteration (pronunciation).\n"
+            f"Example: [Native Script] ||| [Pronunciation]\n"
             f"Do not include any intro or outro text."
         )
 
