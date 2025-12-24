@@ -227,6 +227,43 @@
         #editor-container { height: 350px; background: white; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: 0; }
         .ql-toolbar { border-radius: 12px 12px 0 0; border-color: #e2e8f0 !important; background: #f8fafc; }
         .ql-container { border-color: #e2e8f0 !important; font-family: 'Inter', sans-serif; }
+        
+        /* OUTPUT RESULT STYLES */
+        .result-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            overflow-x: auto;
+        }
+        
+        .result-box-text { white-space: pre-wrap; }
+        .result-box-html { white-space: normal; }
+
+        /* Quiz List Styling (A, B, C) */
+        .result-box-html ol {
+            list-style-type: upper-alpha !important; 
+            padding-left: 20px;
+        }
+
+        /* Quiz Table Styling */
+        .result-box table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: white;
+        }
+        .result-box th, .result-box td {
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            text-align: left;
+        }
+        .result-box th {
+            background-color: #e2e8f0;
+            font-weight: 600;
+        }
 
         /* --- RESPONSIVE MEDIA QUERIES --- */
         @media (max-width: 991px) {
@@ -245,7 +282,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <aside class="sidebar" id="sidebar">
-        <div class="brand" onclick="toggleSidebar()">
+        <div class="brand" onclick="showUserSection('home', 'Dashboard')">
             <i class="fas fa-cube me-2"></i> AI Workspace
         </div>
         
@@ -263,10 +300,10 @@
                     <button class="nav-btn-custom" onclick="showUserSection('email', 'Email Drafter')"><i class="fas fa-envelope-open-text"></i> Email</button>
                     
                     <div class="nav-label">Analysis</div>
-                    <button class="nav-btn-custom" onclick="showUserSection('vision', 'Vision Analyst')"><i class="fas fa-eye"></i> Vision</button>
                     <button class="nav-btn-custom" onclick="showUserSection('code', 'Code Reviewer')"><i class="fas fa-code"></i> Code</button>
 
                     <div class="nav-label">Utilities</div>
+                    <button class="nav-btn-custom" onclick="showUserSection('quiz', 'Quiz Maker')"><i class="fas fa-graduation-cap"></i> Quiz</button>
                     <button class="nav-btn-custom" onclick="showUserSection('pdf', 'PDF Editor')"><i class="fas fa-file-pdf"></i> PDF Tools</button>
                     <button class="nav-btn-custom" onclick="showUserSection('voice', 'Text to Speech')"><i class="fas fa-volume-high"></i> TTS</button>
                     <button class="nav-btn-custom" onclick="showUserSection('transcribe', 'Audio Transcriber')"><i class="fas fa-microphone-lines"></i> Transcriber</button>
@@ -274,7 +311,6 @@
                     <button class="nav-btn-custom" onclick="showUserSection('convert', 'File Converter')"><i class="fas fa-repeat"></i> Converter</button>
                     <button class="nav-btn-custom" onclick="showUserSection('compress', 'Image Compressor')"><i class="fas fa-compress"></i> Compress</button>
                     <button class="nav-btn-custom" onclick="showUserSection('vidaudio', 'Video to Audio')"><i class="fas fa-music"></i> Video to MP3</button>
-                    <button class="nav-btn-custom" onclick="showUserSection('quiz', 'Quiz Maker')"><i class="fas fa-graduation-cap"></i> Quiz</button>
                 </div>
 
                 <div id="adminToolsNavigation" style="display:none;">
@@ -333,7 +369,6 @@
                         <div class="carousel-indicators">
                             <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="0" class="active"></button>
                             <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="1"></button>
-                            <button type="button" data-bs-target="#featureCarousel" data-bs-slide-to="2"></button>
                         </div>
                         <div class="carousel-inner">
                             <div class="carousel-item active" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1200&q=80');">
@@ -341,13 +376,6 @@
                                     <div class="slide-icon"><i class="fas fa-file-signature"></i></div>
                                     <h3>Smart Meeting Minutes</h3>
                                     <p>Transform messy notes into structured, professional meeting summaries instantly using advanced AI models.</p>
-                                </div>
-                            </div>
-                            <div class="carousel-item" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80');">
-                                <div class="carousel-caption-custom">
-                                    <div class="slide-icon"><i class="fas fa-chart-line"></i></div>
-                                    <h3>Vision Analyst</h3>
-                                    <p>Upload charts, diagrams, or photos. Our AI Vision model analyzes the image and extracts data or generates detailed descriptions.</p>
                                 </div>
                             </div>
                             <div class="carousel-item" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80');">
@@ -361,19 +389,81 @@
                     </div>
                 </div>
 
+                <div id="user-section-quiz" class="user-section" style="display:none;">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Quiz Maker</h4>
+                        <form id="quizForm">
+                            <div class="mb-3"><label>Questions</label><input type="number" class="form-control" name="count" value="5"></div>
+                            <div class="mb-3"><label>Topic</label><textarea class="form-control" name="topic" rows="5" placeholder="e.g. Python Basics"></textarea></div>
+                            <div class="text-end"><button type="submit" class="btn btn-primary">Generate Quiz</button></div>
+                        </form>
+                        <div id="quizOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
                 <div id="user-section-minutes" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Meeting Minutes</h4><form id="minutesForm"><div class="mb-3"><textarea class="form-control" name="notes" rows="8" placeholder="Paste notes..."></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Generate</button></div></form><div id="minutesOutput" class="mt-4"></div></div></div>
                 <div id="user-section-ppt" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Presentation Generator</h4><form id="makePptForm"><div class="row mb-3"><div class="col-md-8"><label class="form-label">Topic</label><input type="text" class="form-control" name="topic"></div><div class="col-md-4"><label class="form-label">Template</label><input type="file" class="form-control" name="template_file" accept=".pptx"></div></div><div class="mb-3"><label class="form-label">Context</label><textarea class="form-control" name="source_text" rows="4"></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Create</button></div></form><div id="pptOutput" class="mt-4"></div></div></div>
                 <div id="user-section-email" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Email Drafter</h4><form id="generateEmailForm"><div class="row mb-3"><div class="col-md-6"><label class="form-label">To</label><input type="text" class="form-control" name="recipient"></div><div class="col-md-6"><label class="form-label">Topic</label><input type="text" class="form-control" name="topic"></div></div><div class="text-end"><button type="submit" class="btn btn-primary">Draft</button></div></form><div id="emailOutput" class="mt-4"></div></div></div>
-                <div id="user-section-vision" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Vision Analyst</h4><form id="visionForm"><div class="mb-3"><input type="file" class="form-control" name="image" accept="image/*" required></div><div class="mb-3"><label class="form-label">Prompt</label><input type="text" class="form-control" name="prompt" placeholder="Describe..."></div><div class="text-end"><button type="submit" class="btn btn-primary">Analyze</button></div></form><div id="visionOutput" class="mt-4"></div></div></div>
                 <div id="user-section-code" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Code Reviewer</h4><form id="codeForm"><div class="mb-3"><textarea class="form-control" name="code" rows="10" style="font-family:'Consolas',monospace;background:#282c34;color:#abb2bf;" placeholder="// Code here..."></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Review</button></div></form><div id="codeOutput" class="mt-4"></div></div></div>
-                <div id="user-section-pdf" class="user-section" style="display:none;"><div class="card-box"><div class="d-flex justify-content-between align-items-center mb-4"><h4 class="fw-bold m-0">Document Editor</h4><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="translateCheck"><label class="form-check-label ms-2">Translate?</label></div></div><div class="mb-3" id="pdfLangSelect" style="display:none;"><select class="form-select language-list" name="target_language"></select></div><form id="textToPdfForm"><div id="editor-container"></div><input type="hidden" name="html_content" id="hiddenHtmlInput"><div class="text-end mt-3"><button type="submit" class="btn btn-primary">Download PDF</button></div></form><div id="pdfOutput" class="mt-4"></div></div></div>
-                <div id="user-section-voice" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Text to Speech</h4><form id="textToAudioForm"><div class="row mb-3"><div class="col-md-6"><label>Language</label><select class="form-select language-list-auto" name="source_language"></select></div><div class="col-md-6"><label>Target Voice</label><select class="form-select language-list" name="target_language"></select></div></div><div class="mb-3"><textarea class="form-control" name="text" rows="4"></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Generate</button></div></form><div id="audioOutput" class="mt-4"></div></div></div>
+                
+                <div id="user-section-pdf" class="user-section" style="display:none;">
+                    <div class="card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold m-0">Document Editor</h4>
+                        </div>
+                        <form id="textToPdfForm">
+                            <div id="editor-container"></div>
+                            <input type="hidden" name="html_content" id="hiddenHtmlInput">
+                            <div class="text-end mt-3"><button type="submit" class="btn btn-primary">Download PDF</button></div>
+                        </form>
+                        <div id="pdfOutput" class="mt-4"></div>
+                    </div>
+                </div>
+                
+                <div id="user-section-voice" class="user-section" style="display:none;">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Text to Speech</h4>
+                        <form id="textToAudioForm">
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label>Select Language</label>
+                                    <select class="form-select voice-list" name="target_language"></select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3"><textarea class="form-control" name="text" rows="4" placeholder="Enter text here..."></textarea></div>
+                            <div class="text-end"><button type="submit" class="btn btn-primary">Generate Audio</button></div>
+                        </form>
+                        <div id="audioOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
                 <div id="user-section-transcribe" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Transcriber</h4><form id="audioToTextForm"><div class="mb-3"><label>Language</label><select class="form-select" id="speechLangSelect" name="language"></select></div><div class="mb-3"><input type="file" class="form-control" name="file" accept=".wav"></div><div class="text-end"><button type="submit" class="btn btn-primary">Transcribe</button></div></form><div id="audioToTextOutput" class="mt-4"></div></div></div>
-                <div id="user-section-translate" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Translator</h4><form id="translateForm"><div class="row mb-3"><div class="col-md-6"><label>From</label><select class="form-select language-list-auto" name="source_language"></select></div><div class="col-md-6"><label>To</label><select class="form-select language-list" name="target_language"></select></div></div><div class="mb-3"><textarea class="form-control" name="text" rows="4"></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Translate</button></div></form><div id="translateOutput" class="mt-4"></div></div></div>
+                
+                <div id="user-section-translate" class="user-section" style="display:none;">
+                    <div class="card-box">
+                        <h4 class="fw-bold mb-4">Translator</h4>
+                        <form id="translateForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label>From</label>
+                                    <select class="form-select language-list-auto" name="source_language"></select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>To</label>
+                                    <select class="form-select language-list" name="target_language"></select>
+                                </div>
+                            </div>
+                            <div class="mb-3"><textarea class="form-control" name="text" rows="4"></textarea></div>
+                            <div class="text-end"><button type="submit" class="btn btn-primary">Translate</button></div>
+                        </form>
+                        <div id="translateOutput" class="mt-4"></div>
+                    </div>
+                </div>
+
                 <div id="user-section-convert" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Converter</h4><form id="convertForm"><div class="row mb-3"><div class="col-md-8"><input type="file" class="form-control" name="file" required></div><div class="col-md-4"><select class="form-select" name="format"><option value="PNG">PNG</option><option value="JPG">JPG</option><option value="PDF">PDF</option><option value="WEBP">WEBP</option><option value="ICO">ICO</option></select></div></div><div class="text-end"><button type="submit" class="btn btn-primary">Convert</button></div></form><div id="convertOutput" class="mt-4"></div></div></div>
                 <div id="user-section-compress" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Compressor</h4><form id="compressForm"><div class="mb-3"><input type="file" class="form-control" name="file" required></div><div class="mb-3"><label>Target KB</label><input type="number" class="form-control" name="target_kb" value="500"></div><div class="text-end"><button type="submit" class="btn btn-primary">Compress</button></div></form><div id="compressOutput" class="mt-4"></div></div></div>
                 <div id="user-section-vidaudio" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Video to Audio</h4><form id="vidAudioForm"><div class="mb-3"><input type="file" class="form-control" name="file" accept="video/*" required></div><div class="text-end"><button type="submit" class="btn btn-primary">Extract</button></div></form><div id="vidAudioOutput" class="mt-4"></div></div></div>
-                <div id="user-section-quiz" class="user-section" style="display:none;"><div class="card-box"><h4 class="fw-bold mb-4">Quiz Maker</h4><form id="quizForm"><div class="mb-3"><label>Questions</label><input type="number" class="form-control" name="count" value="5"></div><div class="mb-3"><label>Topic</label><textarea class="form-control" name="topic" rows="5"></textarea></div><div class="text-end"><button type="submit" class="btn btn-primary">Generate</button></div></form><div id="quizOutput" class="mt-4"></div></div></div>
             </div>
 
             <div id="admin-view-container" style="display:none;">
@@ -487,18 +577,17 @@
         const ctxModel = document.getElementById('modelChart').getContext('2d');
         const modelChart = new Chart(ctxModel, { 
             type: 'doughnut', 
-            data: { labels: ['Text', 'Audio', 'Code', 'Vision', 'Chat'], datasets: [{ data: [1, 1, 1, 1, 1], backgroundColor: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'], borderWidth: 0 }] }, 
+            data: { labels: ['Text', 'Audio', 'Code', 'Quiz', 'Chat'], datasets: [{ data: [1, 1, 1, 1, 1], backgroundColor: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'], borderWidth: 0 }] }, 
             options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' }, datalabels: { display: false } } } 
         });
 
-        // --- 4. NAVIGATION LOGIC (USER & ADMIN) ---
+        // --- 4. NAVIGATION LOGIC ---
         function showUserSection(sectionId, headerTitle) {
             document.getElementById('headerTitle').innerText = headerTitle;
             document.querySelectorAll('.user-section').forEach(el => el.style.display = 'none');
             document.getElementById(`user-section-${sectionId}`).style.display = 'block';
             
             document.querySelectorAll('.nav-btn-custom').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
             
             closeSidebarOnMobile();
         }
@@ -583,7 +672,6 @@
                 
                 showUserSection('home', 'Dashboard');
 
-                // Explicitly inject Login Button
                 authContainer.innerHTML = `
                     <button class="btn-login-sidebar" data-bs-toggle="modal" data-bs-target="#loginModal">
                         <i class="fas fa-lock"></i> Admin Login
@@ -619,53 +707,179 @@
                     if(cpuText) cpuText.innerText = (data.cpu || 0) + '%';
                     if(cpuBar) cpuBar.style.width = (data.cpu || 0) + '%';
                 }
-                if (data.usage) { modelChart.data.datasets[0].data = [data.usage.text_gen, data.usage.audio_gen, data.usage.code_review, data.usage.image_analysis, data.usage.chat_msgs || 0]; modelChart.update(); }
+                if (data.usage) { modelChart.data.datasets[0].data = [data.usage.text_gen, data.usage.audio_gen, data.usage.code_review, data.usage.quiz_gen, data.usage.chat_msgs || 0]; modelChart.update(); }
             } catch (e) { }
         }
         setInterval(updateStats, 2000);
 
         // --- 8. LANGUAGES & FORMS ---
-        const genericLanguages = [{code:'en',name:'English'}, {code:'ml',name:'Malayalam'}, {code:'hi',name:'Hindi'}, {code:'ta',name:'Tamil'}, {code:'te',name:'Telugu'}, {code:'kn',name:'Kannada'}, {code:'es',name:'Spanish'}, {code:'fr',name:'French'}, {code:'de',name:'German'}, {code:'zh',name:'Chinese'}, {code:'ja',name:'Japanese'}];
-        const speechLanguages = [{code:'en-US',name:'English (US)'}, {code:'en-IN',name:'English (India)'}, {code:'hi-IN',name:'Hindi'}, {code:'ta-IN',name:'Tamil'}, {code:'ml-IN',name:'Malayalam'}];
+        const genericLanguages = [
+            {code:'en',name:'English'}, 
+            {code:'ml',name:'Malayalam'}, 
+            {code:'hi',name:'Hindi'}, 
+            {code:'ta',name:'Tamil'}, 
+            {code:'te',name:'Telugu'}, 
+            {code:'kn',name:'Kannada'}, 
+            {code:'es',name:'Spanish'}, 
+            {code:'fr',name:'French'}, 
+            {code:'de',name:'German'}, 
+            {code:'zh',name:'Chinese'}, 
+            {code:'ja',name:'Japanese'}
+        ];
+
+        // Ensure we send correct codes for VOICE generation
+        const voiceLanguages = [
+            {code:'en',name:'English'}, 
+            {code:'hi',name:'Hindi (India)'}, 
+            {code:'ta',name:'Tamil'}, 
+            {code:'te',name:'Telugu'}, 
+            {code:'kn',name:'Kannada'}, 
+            {code:'ml',name:'Malayalam'}, 
+            {code:'es',name:'Spanish'}, 
+            {code:'fr',name:'French'}, 
+            {code:'de',name:'German'}
+        ];
 
         function initLanguages() {
-            document.querySelectorAll('.language-list').forEach(s => { s.innerHTML=''; genericLanguages.forEach(l => s.add(new Option(l.name, l.code))); });
-            document.querySelectorAll('.language-list-auto').forEach(s => { s.innerHTML=''; s.add(new Option("Auto-detect", "Auto-detect")); genericLanguages.forEach(l => s.add(new Option(l.name, l.code))); });
+            // Populate generic lists (Used for Translation Target)
+            document.querySelectorAll('.language-list').forEach(s => { 
+                s.innerHTML=''; 
+                genericLanguages.forEach(l => s.add(new Option(l.name, l.code))); 
+            });
+            
+            // Populate Auto lists (Used for Translation Source)
+            document.querySelectorAll('.language-list-auto').forEach(s => { 
+                s.innerHTML=''; 
+                s.add(new Option("Auto-detect", "Auto-detect")); 
+                genericLanguages.forEach(l => s.add(new Option(l.name, l.code))); 
+            });
+            
+            // Populate Voice Specific List (Used for Text-to-Speech)
+            document.querySelectorAll('.voice-list').forEach(s => { 
+                s.innerHTML=''; 
+                voiceLanguages.forEach(l => s.add(new Option(l.name, l.code))); 
+            });
+
             const speechSelect = document.getElementById('speechLangSelect');
-            if(speechSelect) { speechSelect.innerHTML=''; speechLanguages.forEach(l => speechSelect.add(new Option(l.name, l.code))); }
+            if(speechSelect) { 
+                speechSelect.innerHTML=''; 
+                // Add commonly used codes for speech recognition
+                const speechLangs = [{code:'en-US',name:'English (US)'}, {code:'en-IN',name:'English (India)'}, {code:'hi-IN',name:'Hindi'}, {code:'ta-IN',name:'Tamil'}];
+                speechLangs.forEach(l => speechSelect.add(new Option(l.name, l.code))); 
+            }
         }
         initLanguages();
 
         var quill = new Quill('#editor-container', { theme: 'snow', modules: { toolbar: [['bold', 'italic', 'underline'], [{'list':'ordered'}, {'list':'bullet'}]] } });
-        document.getElementById('translateCheck').addEventListener('change', function() { document.getElementById('pdfLangSelect').style.display = this.checked ? 'block' : 'none'; });
+        
+        // --- CLEANED UP: REMOVED TRANSLATE TOGGLE LISTENER ---
+        // (Previously here was a listener for 'translateCheck', but we deleted that element, so the listener is gone to prevent errors)
 
+        // --- CRITICAL FORM HANDLING LOGIC ---
         async function handleForm(formId, url, outputId) {
-            document.getElementById(formId).addEventListener('submit', async function(e) {
+            const formElement = document.getElementById(formId);
+            if (!formElement) return; // Guard clause in case form is missing
+
+            formElement.addEventListener('submit', async function(e) {
                 e.preventDefault();
+                
+                // If PDF form, put Quill content into hidden input
                 if(formId === 'textToPdfForm') document.getElementById('hiddenHtmlInput').value = quill.root.innerHTML;
-                const btn = this.querySelector('button[type="submit"]'); const originalBtnText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...'; btn.disabled = true;
+                
+                const btn = this.querySelector('button[type="submit"]'); 
+                const originalBtnText = btn.innerHTML;
+                const output = document.getElementById(outputId);
+                
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...'; 
+                btn.disabled = true;
+                output.innerHTML = ""; // Clear previous results
+
                 const formData = new FormData(this);
+                
                 try {
-                    const res = await fetch(url, { method: 'POST', body: formData }); const data = await res.json(); const output = document.getElementById(outputId);
+                    const res = await fetch(url, { method: 'POST', body: formData }); 
+                    const data = await res.json(); 
+                    
                     if(data.success) {
                         let content = '';
-                        if(data.file_url) content += `<div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-2"><i class="fas fa-check-circle me-2"></i><a href="${data.file_url}" download class="fw-bold text-decoration-none">Download Result</a></div>`;
-                        if(data.text) content += `<div class="p-3 bg-white rounded border mt-2">${data.text}</div>`;
-                        if(data.translation) content += `<div class="p-3 bg-white rounded border mt-2">${data.translation}</div>`;
-                        output.innerHTML = content; updateStats();
-                    } else { output.innerHTML = `<div class="alert alert-danger shadow-sm border-0">${data.error}</div>`; }
-                } catch(err) { document.getElementById(outputId).innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`; } finally { btn.innerHTML = originalBtnText; btn.disabled = false; }
+                        
+                        // 1. DOWNLOADABLE FILES (PDF, PPT, AUDIO)
+                        if(data.file_url) {
+                            if (url.includes('text-to-audio') || url.includes('video-to-audio')) {
+                                // Audio Player
+                                content += `
+                                <div class="alert alert-success border-0 shadow-sm mb-3">
+                                    <h6 class="alert-heading fw-bold mb-2"><i class="fas fa-music me-2"></i>Audio Ready</h6>
+                                    <audio controls autoplay style="width: 100%;">
+                                        <source src="${data.file_url}" type="audio/mpeg">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                    <div class="mt-2 text-end">
+                                        <a href="${data.file_url}" download class="btn btn-sm btn-outline-success">Download Audio</a>
+                                    </div>
+                                </div>`;
+                            } else {
+                                // Generic Download (PDF, PPT)
+                                content += `
+                                <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-4"></i>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">Success!</h6>
+                                        <a href="${data.file_url}" download class="text-decoration-none stretched-link">Click here to download your file</a>
+                                    </div>
+                                </div>`;
+                            }
+                        }
+                        
+                        // 2. TEXT/HTML CONTENT (Quiz, Emails, etc.)
+                        const contentMap = {
+                            'quiz': data.quiz,              // HTML with Answer Key Table
+                            'minutes': data.minutes,        // Text
+                            'email_content': data.email_content, // Text
+                            'review': data.review,          // Text
+                            'text': data.text,              // Text
+                            'translation': data.translation // Text
+                        };
+
+                        for (const [key, val] of Object.entries(contentMap)) {
+                            if (val) {
+                                // If it's the QUIZ, render directly (it contains HTML tags)
+                                if (key === 'quiz') {
+                                    content += `<div class="result-box result-box-html bg-white border shadow-sm p-4">${val}</div>`;
+                                } else {
+                                    // Otherwise use pre-wrap to preserve formatting
+                                    content += `<div class="result-box result-box-text">${val}</div>`;
+                                }
+                            }
+                        }
+
+                        output.innerHTML = content; 
+                        updateStats();
+                    } else { 
+                        output.innerHTML = `<div class="alert alert-danger shadow-sm border-0"><i class="fas fa-exclamation-triangle me-2"></i>${data.error}</div>`; 
+                    }
+                } catch(err) { 
+                    output.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`; 
+                } finally { 
+                    btn.innerHTML = originalBtnText; 
+                    btn.disabled = false; 
+                }
             });
         }
-        // Register forms
+
+        // Register all forms
         const forms = [
-            ['textToAudioForm', '/text-to-audio', 'audioOutput'], ['audioToTextForm', '/audio-to-text', 'audioToTextOutput'],
-            ['makePptForm', '/make-ppt', 'pptOutput'], ['translateForm', '/translate', 'translateOutput'],
-            ['generateEmailForm', '/generate-email', 'emailOutput'], ['textToPdfForm', '/text-to-pdf', 'pdfOutput'],
-            ['minutesForm', '/generate-minutes', 'minutesOutput'], ['visionForm', '/analyze-image', 'visionOutput'],
-            ['quizForm', '/generate-quiz', 'quizOutput'], ['codeForm', '/review-code', 'codeOutput'],
-            ['convertForm', '/convert-file', 'convertOutput'], ['compressForm', '/compress-image', 'compressOutput'],
+            ['textToAudioForm', '/text-to-audio', 'audioOutput'], 
+            ['audioToTextForm', '/audio-to-text', 'audioToTextOutput'],
+            ['makePptForm', '/make-ppt', 'pptOutput'], 
+            ['translateForm', '/translate', 'translateOutput'],
+            ['generateEmailForm', '/generate-email', 'emailOutput'], 
+            ['textToPdfForm', '/text-to-pdf', 'pdfOutput'],
+            ['minutesForm', '/generate-minutes', 'minutesOutput'], 
+            ['quizForm', '/generate-quiz', 'quizOutput'], 
+            ['codeForm', '/review-code', 'codeOutput'],
+            ['convertForm', '/convert-file', 'convertOutput'], 
+            ['compressForm', '/compress-image', 'compressOutput'],
             ['vidAudioForm', '/video-to-audio', 'vidAudioOutput']
         ];
         forms.forEach(f => handleForm(f[0], f[1], f[2]));

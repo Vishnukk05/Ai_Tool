@@ -1,11 +1,10 @@
 flask
-gunicorn
 python-dotenv
 groq
-gtts
+gTTS
 xhtml2pdf
 python-pptx
-speechrecognition
-psutil
-pillow
+SpeechRecognition
+Pillow
 moviepy
+psutil

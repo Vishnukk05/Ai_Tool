@@ -28,7 +28,6 @@ load_dotenv(env_path)
 app = Flask(__name__)
 
 # --- CRITICAL: SECRET KEY ---
-# Required for sessions. On production, keep this safe.
 app.secret_key = os.environ.get("SECRET_KEY", "super_secret_admin_key_12345") 
 
 # --- LOGGING SETUP ---
@@ -42,8 +41,8 @@ if not os.path.exists(STATIC_FOLDER):
 
 # --- STATS ---
 global_stats = {
-    "text_gen": 5, "audio_gen": 2, "transcribe": 3, "pdf_gen": 4, 
-    "chat_msgs": 0, "image_analysis": 0, "code_review": 0, "quiz_gen": 0,
+    "text_gen": 0, "audio_gen": 0, "transcribe": 0, "pdf_gen": 0, 
+    "chat_msgs": 0, "code_review": 0, "quiz_gen": 0,
     "file_conv": 0, "compression": 0, "vid_audio": 0
 }
 
@@ -61,9 +60,32 @@ ADMIN_PASS = "M@nojkumarkk@2343"
 #                               HELPER FUNCTIONS
 # ==============================================================================
 
-def get_safe_ai_response(prompt, image_file=None):
+def get_chat_response(messages):
     """
-    Wrapper for Groq API to handle Text and Vision requests safely.
+    Dedicated function for Chat that supports conversation history (Memory).
+    """
+    if not API_KEY:
+        return "Error: API Key missing."
+
+    try:
+        client = Groq(api_key=API_KEY)
+        
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile", 
+            messages=messages,
+            # Lower temperature = More factual/accurate.
+            temperature=0.3, 
+            max_tokens=1024,
+            top_p=1,
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"❌ Groq API Error: {e}")
+        return "I apologize, but I am currently experiencing high traffic or an error. Please try again."
+
+def get_safe_ai_response(prompt):
+    """
+    Wrapper for single-turn tasks (Quiz, Email, PPT, etc.)
     """
     if not API_KEY:
         print("❌ Error: GROQ_API_KEY not found in .env")
@@ -71,51 +93,16 @@ def get_safe_ai_response(prompt, image_file=None):
 
     try:
         client = Groq(api_key=API_KEY)
-        
-        # 1. HANDLE IMAGE ANALYSIS (Vision)
-        if image_file:
-            try:
-                # Convert image to base64
-                image_bytes = image_file.read()
-                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-                
-                completion = client.chat.completions.create(
-                    model="llama-3.2-11b-vision-preview", # Vision Model
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{encoded_image}"
-                                    },
-                                },
-                            ],
-                        }
-                    ],
-                    temperature=0.5,
-                    max_tokens=1024,
-                )
-                return completion.choices[0].message.content
-            except Exception as img_err:
-                print(f"❌ Vision Error: {img_err}")
-                return f"Error analyzing image: {str(img_err)}"
-
-        # 2. HANDLE TEXT/CHAT
-        else:
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile", # Text Model
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.6,
-                max_tokens=2048,
-            )
-            return completion.choices[0].message.content
-
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile", 
+            messages=[
+                {"role": "system", "content": "You are a helpful AI assistant. Output clean text."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.6,
+            max_tokens=2048,
+        )
+        return completion.choices[0].message.content
     except Exception as e:
         print(f"❌ Groq API Error: {e}")
         return None
@@ -128,12 +115,8 @@ def get_safe_ai_response(prompt, image_file=None):
 def index(): 
     return render_template('index.html')
 
-# --- CRITICAL FIX FOR RENDER DEPLOYMENT ---
 @app.route('/health')
 def health_check():
-    """
-    Render calls this to verify the app is running.
-    """
     return "OK", 200
 
 # --- AUTH ROUTES ---
@@ -157,53 +140,19 @@ def check_auth():
 # --- STATS ROUTES ---
 @app.route('/api/stats')
 def get_stats():
-    # Only show real CPU stats if logged in as Admin
     if not session.get('is_admin'):
         return jsonify({"cpu": 0, "ram": 0, "usage": global_stats})
-
     try: c, r = psutil.cpu_percent(0.1), psutil.virtual_memory().percent
     except: c, r = 0, 0
     return jsonify({"cpu": c, "ram": r, "usage": global_stats})
 
 @app.route('/download-report')
 def download_report():
-    # Protect Route: Only Admin can download
     if not session.get('is_admin'):
-        return "Unauthorized Access. Please login as Admin.", 401
-
+        return "Unauthorized Access.", 401
     try:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        try: 
-            cpu = psutil.cpu_percent(interval=1)
-            ram = psutil.virtual_memory().percent
-        except: 
-            cpu, ram = 0, 0
-
-        report = f"""
-========================================
-       AI WORKSPACE SYSTEM REPORT       
-========================================
-Generated On: {now}
-Backend Provider: Groq (Llama 3.3)
-Admin User: {ADMIN_USER}
-
-[SYSTEM HEALTH]
-----------------------------------------
-CPU Load  : {cpu}%
-RAM Usage : {ram}%
-
-[TOOL USAGE STATISTICS]
-----------------------------------------
-• Text Generators      : {global_stats.get('text_gen', 0)}
-• Audio Generators     : {global_stats.get('audio_gen', 0)}
-• Audio Transcriptions : {global_stats.get('transcribe', 0)}
-• PDF Documents        : {global_stats.get('pdf_gen', 0)}
-• Image Analysis       : {global_stats.get('image_analysis', 0)}
-• Chat Messages        : {global_stats.get('chat_msgs', 0)}
-• Code Reviews         : {global_stats.get('code_review', 0)}
-• File Conversions     : {global_stats.get('file_conv', 0)}
-========================================
-"""
+        report = f"System Report - {now}\nStats: {global_stats}"
         return Response(report, mimetype="text/plain", headers={"Content-disposition": "attachment; filename=System_Report.txt"})
     except Exception as e: return str(e), 500
 
@@ -216,10 +165,51 @@ def chat():
     increment_stat('chat_msgs')
     try:
         msg = request.form.get('message', '')
-        if not msg: return jsonify({"success": False, "error": "Empty"}), 400
-        res = get_safe_ai_response(msg)
-        return jsonify({"success": True, "response": res if res else "Busy."})
-    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+        if not msg: return jsonify({"success": False, "error": "Empty message"}), 400
+
+        # 1. RETRIEVE HISTORY from Session
+        history = session.get('chat_history', [])
+        
+        # 2. DEFINE SYSTEM PERSONA (Expert Assistant)
+        system_instruction = {
+            "role": "system", 
+            "content": (
+                "You are an advanced AI Enterprise Assistant. Your goal is to be accurate, professional, and helpful.\n"
+                "Rules:\n"
+                "1. Be direct and concise. Avoid fluff.\n"
+                "2. If asking about code, provide efficient, commented code blocks.\n"
+                "3. If you do not know an answer, admit it. Do not hallucinate facts.\n"
+                "4. Use formatting (bolding, lists) to make answers readable."
+            )
+        }
+
+        # 3. BUILD MESSAGE CHAIN
+        messages_payload = [system_instruction] + history + [{"role": "user", "content": msg}]
+
+        # 4. GET AI RESPONSE
+        ai_response = get_chat_response(messages_payload)
+
+        # 5. UPDATE HISTORY (Append current exchange)
+        history.append({"role": "user", "content": msg})
+        history.append({"role": "assistant", "content": ai_response})
+        
+        # Keep only the last 10 messages (5 turns) to save session space
+        if len(history) > 10:
+            history = history[-10:]
+
+        # Save back to session
+        session['chat_history'] = history
+
+        return jsonify({"success": True, "response": ai_response})
+
+    except Exception as e: 
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# Route to clear chat memory manually
+@app.route('/clear-chat', methods=['POST'])
+def clear_chat():
+    session.pop('chat_history', None)
+    return jsonify({"success": True})
 
 @app.route('/generate-minutes', methods=['POST'])
 def generate_minutes():
@@ -238,7 +228,6 @@ def make_ppt():
         src_text = request.form.get('source_text', '')
         template_file = request.files.get('template_file')
         
-        # PPT Generation Logic
         if template_file and template_file.filename != '':
             temp_path = os.path.join(STATIC_FOLDER, f"temp_{uuid.uuid4().hex}.pptx")
             template_file.save(temp_path)
@@ -250,7 +239,6 @@ def make_ppt():
                   "Format exactly like this:\nSLIDE_TITLE: [Title]\nBULLET: [Point 1]\nBULLET: [Point 2]")
         
         content = get_safe_ai_response(prompt)
-        
         if not content: content = f"SLIDE_TITLE: {topic}\nBULLET: Content generation failed."
         
         lines = content.split('\n')
@@ -273,78 +261,59 @@ def make_ppt():
                 
         fname = f"ppt_{uuid.uuid4().hex[:10]}.pptx"
         prs.save(os.path.join(STATIC_FOLDER, fname))
-        if 'temp_path' in locals() and os.path.exists(temp_path): os.remove(temp_path)
         return jsonify({"success": True, "file_url": f"/static/{fname}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
+# --- UPDATED: TEXT TO AUDIO (Fixed Logic) ---
 @app.route('/text-to-audio', methods=['POST'])
 def text_to_audio():
     increment_stat('audio_gen')
     try:
         text = request.form.get('text', '')
-        target_lang = request.form.get('target_language', 'en') 
+        # Get language code directly (e.g., 'hi', 'ta', 'en')
+        target_lang = request.form.get('target_language', 'en').strip()
         
-        # Translate if needed
-        if target_lang != 'en' and target_lang != 'auto-detect':
-            prompt = (f"Translate this to language code '{target_lang}' (only text):\n{text}")
-            translated_res = get_safe_ai_response(prompt)
-            if translated_res: text = translated_res.strip()
-
+        # Fallback: if empty or too long, default to english
+        if not target_lang or len(target_lang) > 5:
+            target_lang = 'en'
+            
         fname = f"audio_{uuid.uuid4().hex[:10]}.mp3"
-        tts_lang = target_lang if len(target_lang) == 2 else 'en'
         
-        try:
-            tts = gTTS(text=text, lang=tts_lang, slow=False)
-            tts.save(os.path.join(STATIC_FOLDER, fname))
-        except Exception as e:
-            print(f"gTTS fallback: {e}")
-            tts = gTTS(text=text, lang='en', slow=False)
-            tts.save(os.path.join(STATIC_FOLDER, fname))
+        # Generate Audio using gTTS
+        tts = gTTS(text=text, lang=target_lang, slow=False)
+        tts.save(os.path.join(STATIC_FOLDER, fname))
 
         return jsonify({
             "success": True, 
             "file_url": f"/static/{fname}", 
             "translated_text": text 
         })
-        
-    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as e: 
+        print(f"TTS Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/audio-to-text', methods=['POST'])
 def audio_to_text():
     increment_stat('transcribe')
     try:
-        if 'file' not in request.files:
-            return jsonify({"success": False, "error": "No file uploaded"}), 400
-            
+        if 'file' not in request.files: return jsonify({"success": False, "error": "No file"}), 400
         file = request.files['file']
         language_code = request.form.get('language', 'en-US') 
+        if file.filename == '': return jsonify({"success": False, "error": "No file selected"}), 400
 
-        if file.filename == '':
-            return jsonify({"success": False, "error": "No file selected"}), 400
-
-        # Save temp file
         filename = f"temp_rec_{uuid.uuid4().hex}.wav"
         filepath = os.path.join(STATIC_FOLDER, filename)
         file.save(filepath)
 
-        # Transcribe using SpeechRecognition
         recognizer = sr.Recognizer()
         with sr.AudioFile(filepath) as source:
             audio_data = recognizer.record(source)
             text = recognizer.recognize_google(audio_data, language=language_code)
 
-        # Cleanup
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
+        if os.path.exists(filepath): os.remove(filepath)
         return jsonify({"success": True, "text": text})
 
-    except sr.UnknownValueError:
-        return jsonify({"success": False, "error": "Could not understand audio"}), 400
-    except sr.RequestError:
-        return jsonify({"success": False, "error": "API unavailable"}), 503
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/translate', methods=['POST'])
 def translate():
@@ -352,47 +321,9 @@ def translate():
     try:
         text = request.form.get('text', '').strip()
         target_lang = request.form.get('target_language', 'en').strip()
-
-        if not text or not target_lang:
-            return jsonify({"success": False, "error": "Missing text"}), 400
-
-        prompt = (
-            f"You are a professional translator. \n"
-            f"Target Language: {target_lang}\n"
-            f"Text: {text}\n"
-            f"Output Requirement: Return the translation in native script, followed by '|||', followed by the English transliteration (pronunciation).\n"
-            f"Example: [Native Script] ||| [Pronunciation]\n"
-            f"Do not include any intro or outro text."
-        )
-
-        full_response = get_safe_ai_response(prompt)
-        
-        if not full_response:
-            return jsonify({"success": False, "translation": "Error: AI Service Busy"}), 503
-
-        translated_text = full_response
-        transliteration = ""
-        if "|||" in full_response:
-            parts = full_response.split("|||")
-            translated_text = parts[0].strip()
-            transliteration = parts[1].strip()
-
-        audio_url = None
-        try:
-            lang_map = {'french': 'fr', 'spanish': 'es', 'hindi': 'hi', 'german': 'de', 'kannada': 'kn', 'tamil': 'ta'}
-            lang_code = target_lang if len(target_lang) == 2 else lang_map.get(target_lang.lower(), 'en')
-            audio_name = f"trans_{uuid.uuid4().hex[:8]}.mp3"
-            gTTS(text=translated_text, lang=lang_code, slow=False).save(os.path.join(STATIC_FOLDER, audio_name))
-            audio_url = f"/static/{audio_name}"
-        except: pass
-
-        return jsonify({
-            "success": True, 
-            "translation": translated_text,
-            "transliteration": transliteration,
-            "audio_url": audio_url
-        })
-        
+        if not text: return jsonify({"success": False, "error": "Missing text"}), 400
+        res = get_safe_ai_response(f"Translate this to {target_lang}: {text}")
+        return jsonify({"success": True, "translation": res if res else "Error"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/generate-email', methods=['POST'])
@@ -409,49 +340,78 @@ def text_to_pdf():
     increment_stat('pdf_gen')
     try:
         h = request.form.get('html_content', '')
-        if request.form.get('translation_needed') == 'true':
-            t = request.form.get('target_language', 'English')
-            res = get_safe_ai_response(f"Translate this HTML content to {t}, keeping all HTML tags intact: {h}")
-            if res: h = res.replace('```html','').replace('```','')
+        styled_html = f"""
+        <html>
+        <head><style>
+            body {{ font-family: Helvetica; font-size: 12px; margin: 0; padding: 20px; }}
+            p {{ margin-bottom: 5px; line-height: 1.4; }}
+        </style></head>
+        <body>{h}</body>
+        </html>"""
         
-        styled_html = f"""<html><body>{h}</body></html>"""
         fname = f"doc_{uuid.uuid4().hex[:10]}.pdf"
         with open(os.path.join(STATIC_FOLDER, fname), "w+b") as f: 
             pisa.CreatePDF(BytesIO(styled_html.encode('utf-8')), dest=f)
         return jsonify({"success": True, "file_url": f"/static/{fname}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/analyze-image', methods=['POST'])
-def analyze_image():
-    increment_stat('image_analysis')
-    try:
-        if 'image' not in request.files: return jsonify({"success": False, "error": "No image"}), 400
-        img_file = request.files['image']
-        prompt = request.form.get('prompt', 'Describe this image detailedly.')
-        
-        res = get_safe_ai_response(prompt, image_file=img_file)
-        return jsonify({"success": True, "analysis": res if res else "Failed to analyze image."})
-    except Exception as e: 
-        print(f"Analyze Image Route Error: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
+# --- UPDATED: QUIZ ROUTE (ABC Options) ---
 @app.route('/generate-quiz', methods=['POST'])
 def generate_quiz():
     increment_stat('quiz_gen')
     try:
         topic = request.form.get('topic', '')
         count = request.form.get('count', '5')
-        prompt = f"Create a {count}-question Multiple Choice Quiz about: {topic}. Include Answer Key at bottom."
+        
+        # FIX: Prompt explicitly tells AI NOT to add A/B/C inside the text
+        prompt = (f"Create a {count}-question Multiple Choice Quiz about: {topic}. "
+                  f"Output strictly as HTML. "
+                  f"Use <h3> for questions. "
+                  f"Use <ol> (ordered list) for the options. "
+                  f"IMPORTANT: Do NOT write 'A.', 'B.', 'C.' inside the <li> tags. Just write the answer text directly. "
+                  f"At the end, add an <h2>Answer Key</h2> section as an HTML Table with columns 'Question' and 'Correct Answer'. "
+                  f"Do not use markdown blocks.")
+        
         res = get_safe_ai_response(prompt)
         
-        html_content = f"<h2>Quiz: {topic}</h2><pre>{res}</pre>"
+        if not res: return jsonify({"success": False, "error": "AI Service Busy"}), 500
+        
+        clean_html = res.replace("```html", "").replace("```", "").strip()
+        
+        # PDF CSS WRAPPER
+        pdf_html = f"""
+        <html>
+            <head>
+                <style>
+                    @page {{ size: A4; margin: 1cm; }}
+                    body {{ font-family: Helvetica, sans-serif; font-size: 11px; color: #000; }}
+                    h1 {{ text-align: center; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 15px; font-size: 18px; }}
+                    h2 {{ color: #b30000; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid #ccc; }}
+                    h3 {{ color: #003366; margin-top: 10px; margin-bottom: 5px; font-size: 12px; }}
+                    
+                    /* This CSS adds the A, B, C, D automatically */
+                    ol {{ margin-top: 0; margin-bottom: 10px; padding-left: 20px; list-style-type: upper-alpha; }}
+                    li {{ margin-bottom: 2px; padding-left: 5px; }}
+                    
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+                    th, td {{ border: 1px solid #999; padding: 4px; text-align: left; font-size: 10px; }}
+                    th {{ background-color: #eee; }}
+                </style>
+            </head>
+            <body>
+                <h1>Quiz: {topic}</h1>
+                {clean_html}
+            </body>
+        </html>
+        """
+        
         fname = f"quiz_{uuid.uuid4().hex[:10]}.pdf"
         with open(os.path.join(STATIC_FOLDER, fname), "w+b") as f:
-            pisa.CreatePDF(BytesIO(html_content.encode('utf-8')), dest=f)
+            pisa.CreatePDF(BytesIO(pdf_html.encode('utf-8')), dest=f)
             
-        return jsonify({"success": True, "quiz": res, "file_url": f"/static/{fname}"})
+        return jsonify({"success": True, "quiz": clean_html, "file_url": f"/static/{fname}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
-
+    
 @app.route('/review-code', methods=['POST'])
 def review_code():
     increment_stat('code_review')
@@ -477,7 +437,6 @@ def convert_file():
         new_filename = f"converted_{uuid.uuid4().hex[:10]}.{target_format.lower()}"
         save_path = os.path.join(STATIC_FOLDER, new_filename)
         img.save(save_path, target_format if target_format != 'JPG' else 'JPEG')
-        
         return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
     except Exception as e: return jsonify({"success": False, "error": f"Error: {str(e)}"}), 500
 
@@ -493,23 +452,12 @@ def compress_image():
         img = img.convert('RGB')
         
         output_io = BytesIO()
-        quality = 90
-        step = 5
-        
-        while quality > 5:
-            output_io.seek(0)
-            output_io.truncate()
-            img.save(output_io, format='JPEG', quality=quality, optimize=True)
-            size_kb = output_io.tell() / 1024
-            if size_kb <= target_kb:
-                break
-            quality -= step
+        img.save(output_io, format='JPEG', quality=30, optimize=True)
             
         new_filename = f"compressed_{uuid.uuid4().hex[:10]}.jpg"
         save_path = os.path.join(STATIC_FOLDER, new_filename)
         with open(save_path, "wb") as f:
             f.write(output_io.getvalue())
-            
         return jsonify({"success": True, "file_url": f"/static/{new_filename}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
@@ -532,18 +480,9 @@ def video_to_audio():
         clip.close()
         
         if os.path.exists(temp_vid_path): os.remove(temp_vid_path)
-        
         return jsonify({"success": True, "file_url": f"/static/{audio_name}"})
     except Exception as e: return jsonify({"success": False, "error": str(e)}), 500
 
-# ==============================================================================
-#                               MAIN EXECUTION
-# ==============================================================================
-
 if __name__ == "__main__":
-    # CRITICAL: Use the PORT environment variable if available (Render provides this).
-    # If not found (e.g., local testing), default to 5000.
     port = int(os.environ.get("PORT", 5000))
-    
-    # CRITICAL: Host must be '0.0.0.0' to be accessible outside the container.
     app.run(host="0.0.0.0", port=port, debug=True)
